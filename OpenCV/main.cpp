@@ -1,9 +1,12 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 
+using namespace std;
+using namespace cv;
+
 int main() {
-	cv::Mat frame;
-	frame = cv::imread("baum.jpg", cv::IMREAD_COLOR);
-	cv::imshow("frame", frame);
-	cv::waitKey(0);
+	Mat frame;
+	frame = imread("baum.jpg", IMREAD_COLOR);
+	imshow("frame", frame);
+	waitKey(0);
 }
