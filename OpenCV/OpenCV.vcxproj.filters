@@ -18,5 +18,46 @@
     <ClCompile Include="main.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="Blob.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\baum.jpg">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Resources\car.jpg">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="D:\Programme &amp; Spiele\Nextcloud\FH-Datein\Semester 5\Computer Visions\Bilder\CamVid\test\0016E5_07969.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Resources\0016E5_07969.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Resources\index.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Resources\car2.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Resources\car.xml" />
+    <Xml Include="Resources\haarcascade_fullbody.xml" />
+    <Xml Include="Resources\haarcascade_frontalface_default.xml" />
+    <Xml Include="Resources\cars.xml" />
+    <Xml Include="Resources\trainCas.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\neg-0.pgm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Blob.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Resources\CarsDrivingUnderBridge.mp4" />
   </ItemGroup>
 </Project>
