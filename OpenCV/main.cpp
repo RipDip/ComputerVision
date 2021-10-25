@@ -34,7 +34,7 @@ int main(void) {
 	vector<vector<Point>> cont;
 	vector<Vec4i> hierarchy;
 	int area, height, width, x, y;
-	Mat roi;
+	Mat roi, element, element2, erosion_dst, dilation_dst;
 	Rect data;
 	while (capVideo.isOpened()) {
 		
@@ -42,8 +42,12 @@ int main(void) {
 		roi = imgFrame1(Range(40, 720), Range(0, 1280));
 		pBackSub->apply(roi, fgMask);
 		threshold(fgMask, fgMask, 254, 255, THRESH_BINARY);
+		element = getStructuringElement(MORPH_RECT, Size(2, 2));
+		element2 = getStructuringElement(MORPH_RECT, Size(4, 4));
+		erode(fgMask, erosion_dst, element);
+		dilate(erosion_dst, dilation_dst, element2);
 		//finding Contours
-		findContours(fgMask, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 		for (int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
 			if (area > 500) {
@@ -54,9 +58,16 @@ int main(void) {
 		}
 
 		//show the current frame and the fg masks
-		imshow("Frame", imgFrame1);
+		imshow("Frame", dilation_dst);
 		imshow("FG Mask", fgMask);
 		imshow("ROI", roi);
+		if ((capVideo.get(1) + 1) < capVideo.get(7)) {
+			capVideo.read(imgFrame1);
+		}
+		else {
+			cout << "end of video\n";
+			break;
+		}
 		frameCount++;
 		waitKey(1);
 	}
