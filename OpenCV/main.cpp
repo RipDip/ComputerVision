@@ -19,7 +19,7 @@ int main(void) {
 	Mat imgFrame1;
 	Mat fgMask;
 
-	int carCount = 0;
+	//int carCount = 0;
 
 	capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
 
@@ -33,7 +33,7 @@ int main(void) {
 	int frameCount = 2;
 	vector<vector<Point>> cont;
 	vector<Vec4i> hierarchy;
-	int area, height, width, x, y;
+	int area;
 	Mat roi, element, element2, erosion_dst, dilation_dst;
 	Rect data;
 	while (capVideo.isOpened()) {
@@ -48,7 +48,7 @@ int main(void) {
 		dilate(erosion_dst, dilation_dst, element2);
 		//finding Contours
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-		for (int i = 0; i < cont.size(); i++) {
+		for (unsigned int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
 			if (area > 500) {
 				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
