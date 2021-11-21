@@ -166,7 +166,12 @@
     <ClInclude Include="Blob.h" />
   </ItemGroup>
   <ItemGroup>
+    <Media Include="D:\Programme &amp; Spiele\Nextcloud\FH-Datein\Semester 5\Computer Visions\Videos\4K Video of Highway Traffic!.mp4" />
     <Media Include="Resources\CarsDrivingUnderBridge.mp4" />
+    <Media Include="Resources\HighwayTraffic.mp4" />
+    <Media Include="Resources\HighwayTraffic2.mp4" />
+    <Media Include="Resources\HighwayTraffic3.mp4" />
+    <Media Include="Resources\trafficCrossing.mp4" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
