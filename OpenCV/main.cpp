@@ -15,6 +15,7 @@ using namespace cv;
 vector<Rect> datacar;
 vector<int> datacartime;
 int datacarhealth = 3;
+int maxy = 250;
 
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
@@ -31,14 +32,14 @@ bool inRange(int low, int high, int x){
 }
 
 void newRect(Rect data) {
-	int range = 70;
+	int range = 50;
 	bool newcar = true;
 	//first ckeck if the car is new
-	cout << "Data x: " << data.x << endl;
-	cout << "Data y: " << data.y << endl;
+	//cout << "Data x: " << data.x << endl;
+	//cout << "Data y: " << data.y << endl;
 	for (int i = 0; i < datacar.size(); i++) {
-		cout << "Datacar x: " << datacar[i].x << " von Zahl: " << i << endl;
-		cout << "Datacar y: " << datacar[i].y << " von Zahl: " << i << endl;
+		//cout << "Datacar x: " << datacar[i].x << " von Zahl: " << i << endl;
+		//cout << "Datacar y: " << datacar[i].y << " von Zahl: " << i << endl;
 		
 		if ((inRange(datacar[i].x - range, datacar[i].x + range, data.x) && inRange(datacar[i].y - range, datacar[i].y + range, data.y)) ) {
 			cout << "Not a new car" << endl;
@@ -47,6 +48,19 @@ void newRect(Rect data) {
 			newcar = false;
 			break;
 		}
+		//if (datacar[i].br().x > data.br().x && datacar[i].br().y > data.br().y && datacar[i].tl().x < data.tl().x && datacar[i].tl().y < data.tl().y) {
+		if (data.br().x < datacar[i].br().x && data.br().y < datacar[i].br().y && data.tl().x > datacar[i].tl().x && data.tl().y > datacar[i].tl().y) {
+			cout << "Inside a car" << endl;
+			newcar = false;
+			break;
+		}
+		if (datacar[i].tl().y < maxy) {
+			cout << "Outside" << endl;
+			datacar.erase(datacar.begin() + i);
+			datacartime.erase(datacartime.begin() + i);
+			break;
+		}
+
 	}
 
 	//than new car add to datacar
@@ -99,6 +113,7 @@ int main(void) {
 		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
 		erode(fgMask, erosion_dst, element);
 		dilate(erosion_dst, dilation_dst, element2);
+		medianBlur(dilation_dst, dilation_dst, 3);
 		//finding Contours
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
