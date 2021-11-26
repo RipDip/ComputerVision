@@ -16,6 +16,7 @@ vector<Rect> datacar;
 vector<int> datacartime;
 int datacarhealth = 3;
 int maxy = 250;
+int countCar = 0;
 
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
@@ -37,6 +38,7 @@ void newRect(Rect data) {
 	//first ckeck if the car is new
 	//cout << "Data x: " << data.x << endl;
 	//cout << "Data y: " << data.y << endl;
+	cout << "Count Car: " << countCar << endl;
 	for (int i = 0; i < datacar.size(); i++) {
 		//cout << "Datacar x: " << datacar[i].x << " von Zahl: " << i << endl;
 		//cout << "Datacar y: " << datacar[i].y << " von Zahl: " << i << endl;
@@ -66,6 +68,7 @@ void newRect(Rect data) {
 	//than new car add to datacar
 	if (data.x < 570 && data.y > 450 && data.y < 720 && newcar) {
 		cout << "New car" << endl;
+		countCar++;
 		datacar.push_back(data);
 		datacartime.push_back(0);
 	}
