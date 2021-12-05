@@ -124,15 +124,16 @@ int main(void) {
 	VideoCapture capVideo;
 
 	Mat imgFrame1;
-	Mat fgMask, fgMask2;
+	Mat fgMask, fgMask2, fgMask3;
 	int option = 4;
 
 	//int carCount = 0;
 
 	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
 	//capVideo.open("Resources/trafficCrossing.mp4");
-	//capVideo.open("Resources/HighwayTraffic2.mp4");
-	capVideo.open("Resources/HighwayTraffic3.mp4");
+	//capVideo.open("Resources/HighwayTraffic.mp4");
+	capVideo.open("Resources/HighwayTraffic2.mp4");
+	//capVideo.open("Resources/HighwayTraffic3.mp4");
 
 	if (!capVideo.isOpened()) {
 		cout << "error reading video file" << endl << endl;
@@ -140,11 +141,11 @@ int main(void) {
 	}
 
 	Ptr<BackgroundSubtractor> pBackSub;
-	pBackSub = createBackgroundSubtractorMOG2();
+	pBackSub = createBackgroundSubtractorMOG2(500, 16, false);
 	int frameCount = 3;
 	vector<vector<Point>> cont, cont2;
 	vector<Vec4i> hierarchy, hierarchy2;
-
+	vector<Mat> result_planes, result_norm_planes;
 	int area, height, width, x, y;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show;
 	Rect data;
@@ -157,13 +158,37 @@ int main(void) {
 		show = roi(Rect(0, 450, 570, 270)); //x,y, width 1280 x, height 720 y
 		//roi = imgFrame1(Range(200, 720), Range(0, 600));
 		fgMask2 = roi.clone();
-		pBackSub->apply(roi, fgMask);
+		fgMask3 = roi.clone();
 		
+		
+		Mat rgbchannel[3], result, result_norm;
+
+		split(fgMask3, rgbchannel);
+		element = getStructuringElement(MORPH_RECT, Size(7, 7));
+		for (Mat rgb : rgbchannel) {
+			dilate(rgb, fgMask3, element);
+			medianBlur(fgMask3, fgMask3, 25);
+			Mat diff_img, norm_img;
+			absdiff(rgb, fgMask3, diff_img);
+			diff_img = 255 - diff_img;
+			normalize(diff_img, norm_img, 0, 255, NORM_MINMAX, CV_8UC1);
+			result_planes.push_back(diff_img);
+			result_norm_planes.push_back(norm_img);
+		}
+		merge(result_planes, result);
+		merge(result_norm_planes, result_norm);
+		result_planes.clear();
+		result_norm_planes.clear();
+
+		imshow("result", result);
+		imshow("result_norm", result_norm);
+		pBackSub->apply(result_norm, fgMask);
 		threshold(fgMask, fgMask, 254, 255, THRESH_BINARY);
 		element = getStructuringElement(MORPH_RECT, Size(2, 2));
 		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
 		erode(fgMask, erosion_dst, element);
 		dilate(erosion_dst, dilation_dst, element2);
+		erode(dilation_dst, dilation_dst, element);
 		//medianBlur(dilation_dst, dilation_dst, 3);
 		//finding Contours
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
@@ -227,6 +252,7 @@ int main(void) {
 			}
 		}
 		else if (option == 4) {
+			
 			for (unsigned int i = 0; i < cont.size(); i++) {
 				area = contourArea(cont[i]);
 				if (area > 2000) {
