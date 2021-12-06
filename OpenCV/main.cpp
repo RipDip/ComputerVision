@@ -141,7 +141,8 @@ int main(void) {
 	}
 
 	Ptr<BackgroundSubtractor> pBackSub;
-	pBackSub = createBackgroundSubtractorMOG2(500, 16, false);
+	pBackSub = createBackgroundSubtractorMOG2();
+	
 	int frameCount = 3;
 	vector<vector<Point>> cont, cont2;
 	vector<Vec4i> hierarchy, hierarchy2;
@@ -161,29 +162,49 @@ int main(void) {
 		fgMask3 = roi.clone();
 		
 		
-		Mat rgbchannel[3], result, result_norm;
+		Mat rgbchannel[3], result;
+		Mat diff_img, norm_img;
 
-		split(fgMask3, rgbchannel);
-		element = getStructuringElement(MORPH_RECT, Size(7, 7));
+		/*split(fgMask3, rgbchannel);
+		element = getStructuringElement(MORPH_RECT, Size(13, 13));
 		for (Mat rgb : rgbchannel) {
 			dilate(rgb, fgMask3, element);
-			medianBlur(fgMask3, fgMask3, 25);
-			Mat diff_img, norm_img;
+			medianBlur(fgMask3, fgMask3, 21);
+			
 			absdiff(rgb, fgMask3, diff_img);
 			diff_img = 255 - diff_img;
-			normalize(diff_img, norm_img, 0, 255, NORM_MINMAX, CV_8UC1);
-			result_planes.push_back(diff_img);
-			result_norm_planes.push_back(norm_img);
+			threshold(diff_img, result, 254, 255, THRESH_OTSU);
 		}
-		merge(result_planes, result);
-		merge(result_norm_planes, result_norm);
-		result_planes.clear();
-		result_norm_planes.clear();
 
-		imshow("result", result);
-		imshow("result_norm", result_norm);
-		pBackSub->apply(result_norm, fgMask);
-		threshold(fgMask, fgMask, 254, 255, THRESH_BINARY);
+		imshow("result", diff_img);
+		imshow("result_norm", result);
+		
+		Mat candidateShadows = fgMask.clone();
+		candidateShadows.create(fgMask.size(), CV_8U);
+		candidateShadows.setTo(Scalar(0));
+		imshow("candidateShadows", candidateShadows);
+		*/
+
+		//fgMask[fgMask == 127, fgMask == 127] = 0;
+		// 
+		//cout << "FGMASK: " << roi << endl;
+		//roi.setTo(Scalar::all(0));
+
+		/*for (int i = 0; i < fgMask.rows; i++) {
+			for (int j = 0; j < fgMask.cols; j++) {
+				if (fgMask.at<Vec3b>(i, j) == Vec3b(127, 127, 127)) {
+					fgMask.at<Vec3b>(i, j)[0] = 255;
+					fgMask.at<Vec3b>(i, j)[1] = 255;
+					fgMask.at<Vec3b>(i, j)[2] = 255;
+				}
+			}
+		}*/
+
+		pBackSub->apply(roi, fgMask);
+
+		
+
+		threshold(fgMask, fgMask, 0, 255, THRESH_BINARY);
 		element = getStructuringElement(MORPH_RECT, Size(2, 2));
 		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
 		erode(fgMask, erosion_dst, element);
@@ -252,7 +273,6 @@ int main(void) {
 			}
 		}
 		else if (option == 4) {
-			
 			for (unsigned int i = 0; i < cont.size(); i++) {
 				area = contourArea(cont[i]);
 				if (area > 2000) {
@@ -272,7 +292,7 @@ int main(void) {
 
 		
 		//show the current frame and the fg masks
-		//imshow("show", show);
+		imshow("show", show);
 		imshow("Frame", dilation_dst);
 		imshow("FG Mask", fgMask);
 		imshow("ROI", roi);
@@ -284,8 +304,8 @@ int main(void) {
 			break;
 		}
 		frameCount++;
-		waitKey(1);
+		waitKey(0);
 	}
 
-	return(0);
+	return(1);
 }

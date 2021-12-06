@@ -50,11 +50,6 @@
     <None Include="Resources\neg-0.pgm" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Blob.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <Media Include="Resources\CarsDrivingUnderBridge.mp4" />
     <Media Include="Resources\trafficCrossing.mp4" />
     <Media Include="D:\Programme &amp; Spiele\Nextcloud\FH-Datein\Semester 5\Computer Visions\Videos\4K Video of Highway Traffic!.mp4" />
