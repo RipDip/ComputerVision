@@ -14,7 +14,7 @@ using namespace cv;
 
 vector<Rect> datacar;
 vector<int> datacartime;
-int datacarhealth = 3;
+int datacarhealth = 2;
 int maxy = 500;
 int countCar = 0;
 float imgLineY;
@@ -83,7 +83,7 @@ void newRect(Rect data) {
 }
 
 void newRect2(Rect data) {
-	int range = 50;
+	int range = 60;
 	bool newcar = true;
 	//first ckeck if the car is new
 	//cout << "Data x: " << data.x << endl;
@@ -100,7 +100,6 @@ void newRect2(Rect data) {
 			newcar = false;
 			break;
 		}
-		//if (datacar[i].br().x > data.br().x && datacar[i].br().y > data.br().y && datacar[i].tl().x < data.tl().x && datacar[i].tl().y < data.tl().y) {
 		if (data.br().x < datacar[i].br().x && data.br().y < datacar[i].br().y && data.tl().x > datacar[i].tl().x && data.tl().y > datacar[i].tl().y) {
 			cout << "Inside a car" << endl;
 			newcar = false;
@@ -119,6 +118,42 @@ void newRect2(Rect data) {
 
 }
 
+void detectStreet(Mat matlines, Mat roi) {
+	Mat static mask1;
+	vector<Vec4i> static lines;
+	bool static firstframe = false;
+
+	if (!firstframe) {
+		cvtColor(matlines, mask1, COLOR_RGB2GRAY);
+		//GaussianBlur(mask1, mask1, Size(5, 5), 0, 4);
+		Canny(mask1, mask1, 50, 150);
+		HoughLinesP(mask1, lines, 1, CV_PI / 180, 200, 100, 250);
+		firstframe = true;
+	}
+	
+	for (size_t i = 0; i < lines.size(); i++) {
+			Vec4i l = lines[i];
+			
+			if (l[0] > 540 && l[0] < 740) {
+				cout << "lines: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
+				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
+			}
+
+			else if (l[2] > 1200 && l[3] > 260 && l[3] > 460) {
+				cout << "lines2: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
+				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
+			}
+			
+			else if (l[1] > 600) {
+				cout << "lines true: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
+				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
+			}
+			
+	}
+	cout << "-------------------------------------" << endl;
+	imshow("Result MASK1", mask1);
+}
+
 int main(void) {
 
 	VideoCapture capVideo;
@@ -129,11 +164,12 @@ int main(void) {
 
 	//int carCount = 0;
 
+	
 	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
 	//capVideo.open("Resources/trafficCrossing.mp4");
 	//capVideo.open("Resources/HighwayTraffic.mp4");
-	capVideo.open("Resources/HighwayTraffic2.mp4");
-	//capVideo.open("Resources/HighwayTraffic3.mp4");
+	//capVideo.open("Resources/HighwayTraffic2.mp4");
+	capVideo.open("Resources/HighwayTraffic3.mp4");
 
 	if (!capVideo.isOpened()) {
 		cout << "error reading video file" << endl << endl;
@@ -148,7 +184,7 @@ int main(void) {
 	vector<Vec4i> hierarchy, hierarchy2;
 	vector<Mat> result_planes, result_norm_planes;
 	int area, height, width, x, y;
-	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show;
+	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
 
 	while (capVideo.isOpened()) {
@@ -160,12 +196,13 @@ int main(void) {
 		//roi = imgFrame1(Range(200, 720), Range(0, 600));
 		fgMask2 = roi.clone();
 		fgMask3 = roi.clone();
+		matlines = roi.clone();
 		
 		
-		Mat rgbchannel[3], result;
+		/*Mat rgbchannel[3], result;
 		Mat diff_img, norm_img;
 
-		/*split(fgMask3, rgbchannel);
+		split(fgMask3, rgbchannel);
 		element = getStructuringElement(MORPH_RECT, Size(13, 13));
 		for (Mat rgb : rgbchannel) {
 			dilate(rgb, fgMask3, element);
@@ -177,13 +214,13 @@ int main(void) {
 		}
 
 		imshow("result", diff_img);
-		imshow("result_norm", result);
+		imshow("result_norm", result);*/
 		
-		Mat candidateShadows = fgMask.clone();
+		/*Mat candidateShadows = fgMask.clone();
 		candidateShadows.create(fgMask.size(), CV_8U);
 		candidateShadows.setTo(Scalar(0));
-		imshow("candidateShadows", candidateShadows);
-		*/
+		imshow("candidateShadows", candidateShadows);*/
+		
 
 		//fgMask[fgMask == 127, fgMask == 127] = 0;
 		// 
@@ -199,17 +236,17 @@ int main(void) {
 				}
 			}
 		}*/
-
-		pBackSub->apply(roi, fgMask);
-
 		
+		pBackSub->apply(roi, fgMask);
+		
+		blur(fgMask, fgMask, Size(13, 13), Point(-1, -1));
+		threshold(fgMask, fgMask, 127, 255, THRESH_BINARY);
 
-		threshold(fgMask, fgMask, 0, 255, THRESH_BINARY);
 		element = getStructuringElement(MORPH_RECT, Size(2, 2));
 		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
-		erode(fgMask, erosion_dst, element);
-		dilate(erosion_dst, dilation_dst, element2);
-		erode(dilation_dst, dilation_dst, element);
+		//erode(fgMask, erosion_dst, element);
+		dilate(fgMask, dilation_dst, element2);
+		//erode(dilation_dst, dilation_dst, element);
 		//medianBlur(dilation_dst, dilation_dst, 3);
 		//finding Contours
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
@@ -289,7 +326,7 @@ int main(void) {
 			}
 			cout << "-------------------------------------" << endl;
 		}
-
+		detectStreet(matlines, roi);
 		
 		//show the current frame and the fg masks
 		imshow("show", show);
