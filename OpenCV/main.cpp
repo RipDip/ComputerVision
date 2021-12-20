@@ -3,7 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgcodecs.hpp>    
 #include <opencv2/video.hpp>
 #include <opencv2/videoio.hpp>
 #include <iostream>
@@ -14,6 +14,7 @@ using namespace cv;
 
 vector<Rect> datacar;
 vector<int> datacartime;
+vector<vector<Point>> contoursline;
 int datacarhealth = 2;
 int maxy = 500;
 int countCar = 0;
@@ -107,6 +108,15 @@ void newRect2(Rect data) {
 		}
 
 	}
+	//midpoint from car = Point(data.x + data.width/2, data.y + data.height/2)
+	if (contoursline.size() > 0) {
+		for (size_t i = 0; i < contoursline.size(); i++) {
+			if (pointPolygonTest(contoursline[i], data.tl(), true) < 0) {
+				cout << "Outside map" << endl;
+				newcar = false;
+			}
+		}
+	}
 
 	//than new car add to datacar
 	if (data.tl().y > imgLineY && newcar) {
@@ -115,43 +125,112 @@ void newRect2(Rect data) {
 		datacar.push_back(data);
 		datacartime.push_back(0);
 	}
+}
 
+inline double Det(double a, double b, double c, double d){
+	return a * d - b * c;
+}
+
+bool LineLineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& ixOut, double& iyOut) {
+	double detL1 = Det(x1, y1, x2, y2);
+	double detL2 = Det(x3, y3, x4, y4);
+	double x1mx2 = x1 - x2;
+	double x3mx4 = x3 - x4;
+	double y1my2 = y1 - y2;
+	double y3my4 = y3 - y4;
+
+	double denom = Det(x1mx2, y1my2, x3mx4, y3my4);
+	if (denom == 0.0){
+		ixOut = NAN;
+		iyOut = NAN;
+		return false;
+	}
+
+	double xnom = Det(detL1, x1mx2, detL2, x3mx4);
+	double ynom = Det(detL1, y1my2, detL2, y3my4);
+	ixOut = xnom / denom;
+	iyOut = ynom / denom;
+	if (!isfinite(ixOut) || !isfinite(iyOut))
+		return false;
+
+	return true;
 }
 
 void detectStreet(Mat matlines, Mat roi) {
 	Mat static mask1;
+	Mat static street;
 	vector<Vec4i> static lines;
+	vector<Vec4i> static tmplines;
+	vector<Vec4i> static tmplines2;
+	
+	vector<Point> tmpcontours;
 	bool static firstframe = false;
+	double x, y;
 
 	if (!firstframe) {
 		cvtColor(matlines, mask1, COLOR_RGB2GRAY);
-		//GaussianBlur(mask1, mask1, Size(5, 5), 0, 4);
 		Canny(mask1, mask1, 50, 150);
 		HoughLinesP(mask1, lines, 1, CV_PI / 180, 200, 100, 250);
 		firstframe = true;
+		for (size_t i = 0; i < lines.size(); i++) {
+			Vec4i l = lines[i];
+			double x, y;
+
+			LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
+				
+				if (l[1] < imgLineY) {
+					tmplines.push_back(l);
+				}
+				else {
+					tmplines2.push_back(l);
+				}
+			}
+		}
+	}
+
+	for (size_t i = 0; i < lines.size(); i++) {
+		Vec4i l = lines[i];		
+			
+		LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
+			if (l[1] < imgLineY) {
+				//cout << "lines: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
+				//line(roi, Point(x, imgLineY), Point(l[2], l[3]), Scalar(255, 0, 0), 3, LINE_AA);
+			}
+			else {
+				//cout << "lines2: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
+				//line(roi, Point(l[0], l[1]), Point(x, imgLineY), Scalar(255, 255, 255), 3, LINE_AA);
+			}
+		}
 	}
 	
-	for (size_t i = 0; i < lines.size(); i++) {
-			Vec4i l = lines[i];
-			
-			if (l[0] > 540 && l[0] < 740) {
-				cout << "lines: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
-				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
-			}
+	
+	LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+	line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
+	int tmpx = x;
+	//LineIterator it(street, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]));
+	/*LineLineIntersect(tmplines[tmplines.size() - 1][0], tmplines[tmplines.size() - 1][1], tmplines[tmplines.size() - 1][2], tmplines[tmplines.size() - 1][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+	line(roi, Point(x, imgLineY), Point(tmplines[tmplines.size() - 1][2], tmplines[tmplines.size() - 1][3]), Scalar(0, 255, 0), 3, LINE_AA);*/
 
-			else if (l[2] > 1200 && l[3] > 260 && l[3] > 460) {
-				cout << "lines2: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
-				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
-			}
-			
-			else if (l[1] > 600) {
-				cout << "lines true: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
-				line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 255, 255), 3, LINE_AA);
-			}
-			
-	}
+	LineLineIntersect(tmplines2[0][0], tmplines2[0][1], tmplines2[0][2], tmplines2[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+	line(roi, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
+	//LineIterator it2(street, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY));
+	/*LineLineIntersect(tmplines2[tmplines2.size() - 2][0], tmplines2[tmplines2.size() - 2][1], tmplines2[tmplines2.size() - 2][2], tmplines2[tmplines2.size() - 2][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+	line(roi, Point(tmplines2[tmplines2.size() - 2][0], tmplines2[tmplines2.size() - 2][1]), Point(x, imgLineY), Scalar(0, 0, 255), 3, LINE_AA);*/
+
+	street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
+	tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
+	tmpcontours.push_back(Point(x - 200, imgLineY));
+
+	tmpcontours.push_back(Point(tmpx + 200, imgLineY));
+	tmpcontours.push_back(Point(tmplines[0][2], tmplines[0][3]));
+	contoursline.push_back(tmpcontours);
+	
+	
 	cout << "-------------------------------------" << endl;
-	imshow("Result MASK1", mask1);
+	//cv::imshow("Result MASK1", mask1);
+	//cv::imshow("Result street", street);
 }
 
 int main(void) {
@@ -168,8 +247,8 @@ int main(void) {
 	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
 	//capVideo.open("Resources/trafficCrossing.mp4");
 	//capVideo.open("Resources/HighwayTraffic.mp4");
-	//capVideo.open("Resources/HighwayTraffic2.mp4");
-	capVideo.open("Resources/HighwayTraffic3.mp4");
+	capVideo.open("Resources/HighwayTraffic2.mp4");
+	//capVideo.open("Resources/HighwayTraffic3.mp4");
 
 	if (!capVideo.isOpened()) {
 		cout << "error reading video file" << endl << endl;
@@ -183,7 +262,7 @@ int main(void) {
 	vector<vector<Point>> cont, cont2;
 	vector<Vec4i> hierarchy, hierarchy2;
 	vector<Mat> result_planes, result_norm_planes;
-	int area, height, width, x, y;
+	int area;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
 
@@ -329,10 +408,10 @@ int main(void) {
 		detectStreet(matlines, roi);
 		
 		//show the current frame and the fg masks
-		imshow("show", show);
-		imshow("Frame", dilation_dst);
-		imshow("FG Mask", fgMask);
-		imshow("ROI", roi);
+		cv::imshow("show", show);
+		cv::imshow("Frame", dilation_dst);
+		cv::imshow("FG Mask", fgMask);
+		cv::imshow("ROI", roi);
 		if ((capVideo.get(1) + 1) < capVideo.get(7)) {
 			capVideo.read(imgFrame1);
 		}
@@ -341,7 +420,7 @@ int main(void) {
 			break;
 		}
 		frameCount++;
-		waitKey(0);
+		waitKey(1);
 	}
 
 	return(1);
