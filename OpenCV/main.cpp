@@ -19,6 +19,98 @@ int datacarhealth = 2;
 int maxy = 500;
 int countCar = 0;
 float imgLineY;
+bool condition = true;
+Point P1(0, 0);
+Point P2(0, 0);
+Rect ROI(0, 0, 0, 0);
+bool clicked = false;
+
+VideoCapture capVideo;
+VideoCapture strcCap;
+
+Mat imgFrame1;
+Mat strucFrame;
+Mat fgMask, fgMask2, fgMask3;
+int option = 4;
+
+void checkBoundary() {
+	//check croping rectangle exceed image boundary
+	if (ROI.width > strucFrame.cols - ROI.x)
+		ROI.width = strucFrame.cols - ROI.x;
+
+	if (ROI.height > strucFrame.rows - ROI.y)
+		ROI.height = strucFrame.rows - ROI.y;
+
+	if (ROI.x < 0)
+		ROI.x = 0;
+
+	if (ROI.y < 0)
+		ROI.height = 0;
+}
+
+void showImage() {
+	//strucFrame = src.clone();
+	//checkBoundary();
+	if (ROI.width > 0 && ROI.height > 0) {
+		strucFrame = strucFrame(ROI);
+	}
+
+	rectangle(strucFrame, ROI, Scalar(0, 255, 0), 1, 8, 0);
+	imshow("Struc", strucFrame);
+}
+
+static void onMouse(int event, int x, int y, int, void*)
+{
+	//if (event != EVENT_LBUTTONDOWN)
+		//condition = false;
+		//return;
+	
+	switch (event) {
+
+		case  EVENT_LBUTTONDOWN:
+			clicked = true;
+			P1.x = x;
+			P1.y = y;
+			cout << "P1:(" << P1.x << ", " << P1.y << ")" << endl;
+			//clicked = true;
+			break;
+
+		case  EVENT_LBUTTONUP:
+			P2.x = x;
+			P2.y = y;
+			clicked = false;
+			condition = false;
+			cout << "P2:(" << P2.x << ", " << P2.y << ")" << endl;
+			break;
+		case EVENT_MOUSEMOVE:
+			P2.x = x;
+			P2.y = y;
+			break;
+
+		default:
+			break;
+	}
+	if (clicked) {
+		if (P1.x > P2.x) {
+			ROI.x = P2.x;
+			ROI.width = P1.x - P2.x;
+		}
+		else {
+			ROI.x = P1.x;
+			ROI.width = P2.x - P1.x;
+		}
+
+		if (P1.y > P2.y) {
+			ROI.y = P2.y;
+			ROI.height = P1.y - P2.y;
+		}
+		else {
+			ROI.y = P1.y;
+			ROI.height = P2.y - P1.y;
+		}
+
+	}
+}
 
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
@@ -235,20 +327,16 @@ void detectStreet(Mat matlines, Mat roi) {
 
 int main(void) {
 
-	VideoCapture capVideo;
 
-	Mat imgFrame1;
-	Mat fgMask, fgMask2, fgMask3;
-	int option = 4;
 
 	//int carCount = 0;
-
 	
 	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
 	//capVideo.open("Resources/trafficCrossing.mp4");
 	//capVideo.open("Resources/HighwayTraffic.mp4");
 	capVideo.open("Resources/HighwayTraffic2.mp4");
 	//capVideo.open("Resources/HighwayTraffic3.mp4");
+	strcCap = capVideo;
 
 	if (!capVideo.isOpened()) {
 		cout << "error reading video file" << endl << endl;
@@ -265,6 +353,21 @@ int main(void) {
 	int area;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
+
+	strcCap >> strucFrame;
+	strcCap >> strucFrame;
+	namedWindow("Struc", 1);
+	setMouseCallback("Struc", onMouse, NULL);
+	imshow("Struc", strucFrame);
+	while (condition) {
+		cout << "Press Enter After ROI is selected" << endl;
+		waitKey(0);
+		cout << "P1:(" << P1.x << ", " << P1.y << ")" << endl;
+		cout << "P2:(" << P2.x << ", " << P2.y << ")" << endl;
+		cout << "ROI:(" << ROI.height << ", " << ROI.width << ")" << endl;
+	}
+	
+
 
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
