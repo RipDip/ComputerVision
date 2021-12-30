@@ -20,51 +20,67 @@ int maxy = 500;
 int countCar = 0;
 float imgLineY;
 bool condition = true;
-Point P1(0, 0);
-Point P2(0, 0);
-Rect ROI(0, 0, 0, 0);
+Point P1;
+Point P2;
+Point P3;
+Point start, ende;
+Rect2i ROIR(0, 0, 0, 0);
 bool clicked = false;
+bool vertical = false;
 
 VideoCapture capVideo;
 VideoCapture strcCap;
 
 Mat imgFrame1;
 Mat strucFrame;
-Mat fgMask, fgMask2, fgMask3;
-int option = 4;
+Mat strucCopy;
+Mat fgMask;
 
-void checkBoundary() {
-	//check croping rectangle exceed image boundary
-	if (ROI.width > strucFrame.cols - ROI.x)
-		ROI.width = strucFrame.cols - ROI.x;
-
-	if (ROI.height > strucFrame.rows - ROI.y)
-		ROI.height = strucFrame.rows - ROI.y;
-
-	if (ROI.x < 0)
-		ROI.x = 0;
-
-	if (ROI.y < 0)
-		ROI.height = 0;
-}
-
-void showImage() {
-	//strucFrame = src.clone();
-	//checkBoundary();
-	if (ROI.width > 0 && ROI.height > 0) {
-		strucFrame = strucFrame(ROI);
-	}
-
-	rectangle(strucFrame, ROI, Scalar(0, 255, 0), 1, 8, 0);
+void showRectangle() {
+	strucCopy = strucFrame.clone();
+	rectangle(strucFrame, ROIR, Scalar(0, 255, 0), 1, 8, 0);
 	imshow("Struc", strucFrame);
+	strucFrame = strucCopy.clone();
 }
 
-static void onMouse(int event, int x, int y, int, void*)
-{
-	//if (event != EVENT_LBUTTONDOWN)
-		//condition = false;
-		//return;
-	
+void showLine() {
+	strucCopy = strucFrame.clone();
+	line(strucFrame, start, ende, Scalar(0, 255, 0), 2);
+	imshow("CounterLine", strucFrame);
+	strucFrame = strucCopy.clone();
+}
+
+static void onCounter(int event, int x, int y, int, void*) {
+	switch (event) {
+		case  EVENT_LBUTTONDOWN:
+			P3.x = x;
+			P3.y = y;
+			cout << "P3:(" << P3.x << ", " << P3.y << ")" << endl;
+			cout << "Window:(" << strucFrame.size().width << ", " << strucFrame.size().height << ")" << endl;
+			break;
+
+		case EVENT_RBUTTONDOWN:
+			vertical != vertical;
+
+		default:
+			break;
+	}
+	if (vertical) {
+		start.x = P3.x;
+		ende.y = strucFrame.size().height;
+		ende.x = P3.x;
+		start.y = 0;
+	}
+	else {
+		start.y = P3.y;
+		ende.y = P3.y;
+		start.x = 0;
+		ende.x = strucFrame.size().width;
+	}
+	showLine();
+}
+
+static void onMouse(int event, int x, int y, int, void*){
 	switch (event) {
 
 		case  EVENT_LBUTTONDOWN:
@@ -72,7 +88,6 @@ static void onMouse(int event, int x, int y, int, void*)
 			P1.x = x;
 			P1.y = y;
 			cout << "P1:(" << P1.x << ", " << P1.y << ")" << endl;
-			//clicked = true;
 			break;
 
 		case  EVENT_LBUTTONUP:
@@ -82,9 +97,12 @@ static void onMouse(int event, int x, int y, int, void*)
 			condition = false;
 			cout << "P2:(" << P2.x << ", " << P2.y << ")" << endl;
 			break;
+
 		case EVENT_MOUSEMOVE:
-			P2.x = x;
-			P2.y = y;
+			if (clicked) {
+				P2.x = x;
+				P2.y = y;
+			}
 			break;
 
 		default:
@@ -92,24 +110,25 @@ static void onMouse(int event, int x, int y, int, void*)
 	}
 	if (clicked) {
 		if (P1.x > P2.x) {
-			ROI.x = P2.x;
-			ROI.width = P1.x - P2.x;
+			ROIR.x = P2.x;
+			ROIR.width = P1.x - P2.x;
 		}
 		else {
-			ROI.x = P1.x;
-			ROI.width = P2.x - P1.x;
+			ROIR.x = P1.x;
+			ROIR.width = P2.x - P1.x;
 		}
 
 		if (P1.y > P2.y) {
-			ROI.y = P2.y;
-			ROI.height = P1.y - P2.y;
+			ROIR.y = P2.y;
+			ROIR.height = P1.y - P2.y;
 		}
 		else {
-			ROI.y = P1.y;
-			ROI.height = P2.y - P1.y;
+			ROIR.y = P1.y;
+			ROIR.height = P2.y - P1.y;
 		}
 
 	}
+	showRectangle();
 }
 
 void countdatacartime() {
@@ -132,50 +151,8 @@ bool inRange(int low, int high, int x){
 	return (low <= x && x <= high);
 }
 
+
 void newRect(Rect data) {
-	int range = 50;
-	bool newcar = true;
-	//first ckeck if the car is new
-	//cout << "Data x: " << data.x << endl;
-	//cout << "Data y: " << data.y << endl;
-	cout << "Count Car: " << countCar << endl;
-	for (int i = 0; i < datacar.size(); i++) {
-		//cout << "Datacar x: " << datacar[i].x << " von Zahl: " << i << endl;
-		//cout << "Datacar y: " << datacar[i].y << " von Zahl: " << i << endl;
-		
-		if ((inRange(datacar[i].x - range, datacar[i].x + range, data.x) && inRange(datacar[i].y - range, datacar[i].y + range, data.y)) ) {
-			cout << "Not a new car" << endl;
-			datacar[i] = data;
-			datacartime[i] = 0;
-			newcar = false;
-			break;
-		}
-		//if (datacar[i].br().x > data.br().x && datacar[i].br().y > data.br().y && datacar[i].tl().x < data.tl().x && datacar[i].tl().y < data.tl().y) {
-		if (data.br().x < datacar[i].br().x && data.br().y < datacar[i].br().y && data.tl().x > datacar[i].tl().x && data.tl().y > datacar[i].tl().y) {
-			cout << "Inside a car" << endl;
-			newcar = false;
-			break;
-		}
-		if (datacar[i].tl().y < maxy) {
-			cout << "Outside" << endl;
-			datacar.erase(datacar.begin() + i);
-			datacartime.erase(datacartime.begin() + i);
-			break;
-		}
-
-	}
-
-	//than new car add to datacar
-	if (data.x < 570 && data.y > 450 && data.y < 720 && newcar) {
-		cout << "New car" << endl;
-		countCar++;
-		datacar.push_back(data);
-		datacartime.push_back(0);
-	}
-	
-}
-
-void newRect2(Rect data) {
 	int range = 60;
 	bool newcar = true;
 	//first ckeck if the car is new
@@ -351,6 +328,7 @@ int main(void) {
 	vector<Vec4i> hierarchy, hierarchy2;
 	vector<Mat> result_planes, result_norm_planes;
 	int area;
+	int fps = 1;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
 
@@ -364,60 +342,28 @@ int main(void) {
 		waitKey(0);
 		cout << "P1:(" << P1.x << ", " << P1.y << ")" << endl;
 		cout << "P2:(" << P2.x << ", " << P2.y << ")" << endl;
-		cout << "ROI:(" << ROI.height << ", " << ROI.width << ")" << endl;
+		cout << "ROI:(" << ROIR.x << ", " << ROIR.y <<  ", " << ROIR.width << ", " << ROIR.height << ")" << endl;
 	}
 	
-
-
+	destroyWindow("Struc");
+	namedWindow("CounterLine", 1);
+	setMouseCallback("CounterLine", onCounter, NULL);
+	strucFrame = strucFrame(ROIR);
+	imshow("CounterLine", strucFrame);
+	condition = true;
+	while (condition) {
+		cout << "Press Enter After ROI is selected" << endl;
+		char c = waitKey();
+		if (c == ' ') {
+			condition = false;
+		}
+	}
+	destroyWindow("CounterLine");
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
-		//roi = imgFrame1(Range(40, 720), Range(0, 1280));
-		roi = imgFrame1(Range(0, 720), Range(0, 1280));
+		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
 		imgLineY = roi.size().height / 2.85;
-		show = roi(Rect(0, 450, 570, 270)); //x,y, width 1280 x, height 720 y
-		//roi = imgFrame1(Range(200, 720), Range(0, 600));
-		fgMask2 = roi.clone();
-		fgMask3 = roi.clone();
 		matlines = roi.clone();
-		
-		
-		/*Mat rgbchannel[3], result;
-		Mat diff_img, norm_img;
-
-		split(fgMask3, rgbchannel);
-		element = getStructuringElement(MORPH_RECT, Size(13, 13));
-		for (Mat rgb : rgbchannel) {
-			dilate(rgb, fgMask3, element);
-			medianBlur(fgMask3, fgMask3, 21);
-			
-			absdiff(rgb, fgMask3, diff_img);
-			diff_img = 255 - diff_img;
-			threshold(diff_img, result, 254, 255, THRESH_OTSU);
-		}
-
-		imshow("result", diff_img);
-		imshow("result_norm", result);*/
-		
-		/*Mat candidateShadows = fgMask.clone();
-		candidateShadows.create(fgMask.size(), CV_8U);
-		candidateShadows.setTo(Scalar(0));
-		imshow("candidateShadows", candidateShadows);*/
-		
-
-		//fgMask[fgMask == 127, fgMask == 127] = 0;
-		// 
-		//cout << "FGMASK: " << roi << endl;
-		//roi.setTo(Scalar::all(0));
-
-		/*for (int i = 0; i < fgMask.rows; i++) {
-			for (int j = 0; j < fgMask.cols; j++) {
-				if (fgMask.at<Vec3b>(i, j) == Vec3b(127, 127, 127)) {
-					fgMask.at<Vec3b>(i, j)[0] = 255;
-					fgMask.at<Vec3b>(i, j)[1] = 255;
-					fgMask.at<Vec3b>(i, j)[2] = 255;
-				}
-			}
-		}*/
 		
 		pBackSub->apply(roi, fgMask);
 		
@@ -426,93 +372,28 @@ int main(void) {
 
 		element = getStructuringElement(MORPH_RECT, Size(2, 2));
 		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
-		//erode(fgMask, erosion_dst, element);
 		dilate(fgMask, dilation_dst, element2);
-		//erode(dilation_dst, dilation_dst, element);
-		//medianBlur(dilation_dst, dilation_dst, 3);
-		//finding Contours
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
-		if (option == 0) {
-			for (int i = 0; i < cont.size(); i++) {
-				area = contourArea(cont[i]);
-				if (area > 700 && area < roi.size().width * roi.size().height / 10) {
-					//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
-					data = boundingRect(cont[i]);
-
-					//cout << "First Data x: " << data.x << endl;
-					//cout << "First Data y: " << data.y << endl;
-					//rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 255), 2, 8, 0);
-					newRect(data);
-					if (data.x < 570 && data.y > 350 && data.y < 720) {
-
-						//cout << "Data x: " << data.x << endl;
-						//cout << "Data y: " << data.y << endl;
-						//rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
-					}
-
-				}
-			}
-			countdatacartime();
-			for (int i = 0; i < datacar.size(); i++) {
-				rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
-			}
-			cout << "-------------------------------------" << endl;
-		}
-		else if (option == 1) {
-			for (unsigned int i = 0; i < cont.size(); i++) {
-				area = contourArea(cont[i]);
-				if (area > 500) {
-					//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
-					data = boundingRect(cont[i]);
-					rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
-				}
+		for (unsigned int i = 0; i < cont.size(); i++) {
+			area = contourArea(cont[i]);
+			if (area > 2000) {
+				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
+				data = boundingRect(cont[i]);
+				newRect(data);
+				//rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
 			}
 		}
-		//approach to detect line
-		else if (option == 3) {
-			Mat gray, gray2;
-			cvtColor(fgMask2, gray, COLOR_BGR2GRAY);
-			threshold(gray, gray, 127, 255, 0);
-			gray2 = gray.clone();
-			pBackSub->apply(gray, fgMask);
-
-			threshold(fgMask, fgMask, 254, 255, THRESH_BINARY_INV);
-			element = getStructuringElement(MORPH_RECT, Size(2, 2));
-			element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
-			erode(fgMask, erosion_dst, element);
-			dilate(erosion_dst, dilation_dst, element2);
-			findContours(dilation_dst, cont2, hierarchy2, RETR_TREE, CHAIN_APPROX_SIMPLE);
-			for (int i = 0; i < cont2.size(); i++) {
-				area = contourArea(cont2[i]);
-				if (area > 150 && area < 500) {
-					data = boundingRect(cont2[i]);
-					rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
-				}
-			}
+		countdatacartime();
+		line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
+		for (int i = 0; i < datacar.size(); i++) {
+			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
-		else if (option == 4) {
-			for (unsigned int i = 0; i < cont.size(); i++) {
-				area = contourArea(cont[i]);
-				if (area > 2000) {
-					//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
-					data = boundingRect(cont[i]);
-					newRect2(data);
-					//rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
-				}
-			}
-			countdatacartime();
-			line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
-			for (int i = 0; i < datacar.size(); i++) {
-				rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
-			}
-			cout << "-------------------------------------" << endl;
-		}
+		cout << "-------------------------------------" << endl;
 		detectStreet(matlines, roi);
 		
 		//show the current frame and the fg masks
-		cv::imshow("show", show);
-		cv::imshow("Frame", dilation_dst);
+		cv::imshow("Frame", imgFrame1);
 		cv::imshow("FG Mask", fgMask);
 		cv::imshow("ROI", roi);
 		if ((capVideo.get(1) + 1) < capVideo.get(7)) {
@@ -523,7 +404,14 @@ int main(void) {
 			break;
 		}
 		frameCount++;
-		waitKey(1);
+
+		char b = waitKey(fps);
+		if (b == '+') {
+			fps++;
+		}
+		else if (b == '-') {
+			fps--;
+		}
 	}
 
 	return(1);
