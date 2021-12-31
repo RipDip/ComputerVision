@@ -178,14 +178,15 @@ void newRect(Rect data) {
 
 	}
 	//midpoint from car = Point(data.x + data.width/2, data.y + data.height/2)
-	if (contoursline.size() > 0) {
+	//not functional
+	/*if (contoursline.size() > 0) {
 		for (size_t i = 0; i < contoursline.size(); i++) {
 			if (pointPolygonTest(contoursline[i], data.tl(), true) < 0) {
 				cout << "Outside map" << endl;
 				newcar = false;
 			}
 		}
-	}
+	}*/
 
 	//than new car add to datacar
 	if (data.tl().y > imgLineY && newcar) {
@@ -257,36 +258,13 @@ void detectStreet(Mat matlines, Mat roi) {
 			}
 		}
 	}
-
-	for (size_t i = 0; i < lines.size(); i++) {
-		Vec4i l = lines[i];		
-			
-		LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-		if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
-			if (l[1] < imgLineY) {
-				//cout << "lines: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
-				//line(roi, Point(x, imgLineY), Point(l[2], l[3]), Scalar(255, 0, 0), 3, LINE_AA);
-			}
-			else {
-				//cout << "lines2: " << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << endl;
-				//line(roi, Point(l[0], l[1]), Point(x, imgLineY), Scalar(255, 255, 255), 3, LINE_AA);
-			}
-		}
-	}
-	
 	
 	LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 	line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
 	int tmpx = x;
-	//LineIterator it(street, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]));
-	/*LineLineIntersect(tmplines[tmplines.size() - 1][0], tmplines[tmplines.size() - 1][1], tmplines[tmplines.size() - 1][2], tmplines[tmplines.size() - 1][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-	line(roi, Point(x, imgLineY), Point(tmplines[tmplines.size() - 1][2], tmplines[tmplines.size() - 1][3]), Scalar(0, 255, 0), 3, LINE_AA);*/
 
 	LineLineIntersect(tmplines2[0][0], tmplines2[0][1], tmplines2[0][2], tmplines2[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 	line(roi, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
-	//LineIterator it2(street, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY));
-	/*LineLineIntersect(tmplines2[tmplines2.size() - 2][0], tmplines2[tmplines2.size() - 2][1], tmplines2[tmplines2.size() - 2][2], tmplines2[tmplines2.size() - 2][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-	line(roi, Point(tmplines2[tmplines2.size() - 2][0], tmplines2[tmplines2.size() - 2][1]), Point(x, imgLineY), Scalar(0, 0, 255), 3, LINE_AA);*/
 
 	street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
 	tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
@@ -298,20 +276,49 @@ void detectStreet(Mat matlines, Mat roi) {
 	
 	
 	cout << "-------------------------------------" << endl;
-	//cv::imshow("Result MASK1", mask1);
-	//cv::imshow("Result street", street);
+}
+
+string openVideo() {
+	cout << "Which Video do you want to use?" << endl;
+	string path;
+	string videos[6] = { "CarsDrivingUnderBridge.mp4", "HighwayTraffic2.mp4", "HighwayTraffic3.mp4" , "nighthighway.mp4" , "nightvideo.mp4" , "rainvideo.mp4"};
+	int choise = 0;
+	int counter = 1;
+	string tmp;
+	bool endwhile = false;
+	while (!endwhile) {
+		cout << "Which Video do you want to use?" << endl;
+		cout << "You have the choise between 1 and 6" << endl;
+		for (string &video : videos) {
+			cout <<  counter <<". " << video << endl;
+			counter++;
+		}
+		counter = 0;
+		cin >> tmp;
+		istringstream(tmp) >> choise;
+		if (choise < 1 || choise > 6) {
+			cout << "Error" << endl;
+		}
+		else {
+			endwhile = true;
+		}
+	}
+	choise--;
+	videos[choise] = "Resources/" + videos[choise];
+	cout << "Path: " << videos[choise] << endl;
+	path = videos[choise];
+
+	return path;
 }
 
 int main(void) {
-
-
-
+	string path = openVideo();
 	//int carCount = 0;
 	
+	capVideo.open(path);
 	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
-	//capVideo.open("Resources/trafficCrossing.mp4");
 	//capVideo.open("Resources/HighwayTraffic.mp4");
-	capVideo.open("Resources/HighwayTraffic2.mp4");
+	//capVideo.open("Resources/HighwayTraffic2.mp4");
 	//capVideo.open("Resources/HighwayTraffic3.mp4");
 	strcCap = capVideo;
 
@@ -362,8 +369,9 @@ int main(void) {
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
 		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
-		imgLineY = roi.size().height / 2.85;
-		matlines = roi.clone();
+		tmproi = imgFrame1(Range(0, 720), Range(0, 1280));
+		imgLineY = tmproi.size().height / 2.85;
+		matlines = tmproi.clone();
 		
 		pBackSub->apply(roi, fgMask);
 		
@@ -385,12 +393,12 @@ int main(void) {
 			}
 		}
 		countdatacartime();
-		line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
+		line(tmproi, Point(0, imgLineY), Point(tmproi.size().width, imgLineY), 1, 8, 0);
 		for (int i = 0; i < datacar.size(); i++) {
 			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
 		cout << "-------------------------------------" << endl;
-		detectStreet(matlines, roi);
+		detectStreet(matlines, tmproi);
 		
 		//show the current frame and the fg masks
 		cv::imshow("Frame", imgFrame1);
