@@ -226,9 +226,10 @@ bool LineLineIntersect(double x1, double y1, double x2, double y2, double x3, do
 	return true;
 }
 
-void detectStreet(Mat matlines, Mat roi) {
+Mat detectStreet(Mat roi) {
 	Mat static mask1;
 	Mat static street;
+	Mat matlines = roi.clone();
 	vector<Vec4i> static lines;
 	vector<Vec4i> static tmplines;
 	vector<Vec4i> static tmplines2;
@@ -240,12 +241,14 @@ void detectStreet(Mat matlines, Mat roi) {
 	if (!firstframe) {
 		cvtColor(matlines, mask1, COLOR_RGB2GRAY);
 		Canny(mask1, mask1, 50, 150);
+
 		HoughLinesP(mask1, lines, 1, CV_PI / 180, 200, 100, 250);
 		firstframe = true;
+		cout << "Count of lines: " << lines.size() << endl;
 		for (size_t i = 0; i < lines.size(); i++) {
 			Vec4i l = lines[i];
 			double x, y;
-
+			line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 255, 0), 3, LINE_AA);
 			LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
 				
@@ -258,24 +261,29 @@ void detectStreet(Mat matlines, Mat roi) {
 			}
 		}
 	}
-	
-	LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-	line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
-	int tmpx = x;
+	cout << "Count of lines: " << tmplines.size() << endl;
+	if (tmplines.size() > 0) {
+		LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
+		int tmpx = x;
 
-	LineLineIntersect(tmplines2[0][0], tmplines2[0][1], tmplines2[0][2], tmplines2[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-	line(roi, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
+		LineLineIntersect(tmplines2[0][0], tmplines2[0][1], tmplines2[0][2], tmplines2[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 
-	street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
-	tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
-	tmpcontours.push_back(Point(x - 200, imgLineY));
+		//street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
+		tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
+		tmpcontours.push_back(Point(x - 200, imgLineY));
 
-	tmpcontours.push_back(Point(tmpx + 200, imgLineY));
-	tmpcontours.push_back(Point(tmplines[0][2], tmplines[0][3]));
-	contoursline.push_back(tmpcontours);
+		tmpcontours.push_back(Point(tmpx + 200, imgLineY));
+		tmpcontours.push_back(Point(tmplines[0][2], tmplines[0][3]));
+		contoursline.push_back(tmpcontours);
+	}
+
 	
-	
+	/*imshow("Mask1", mask1);
+	imshow("roi2", roi);*/
 	cout << "-------------------------------------" << endl;
+	return roi;
 }
 
 string openVideo() {
@@ -369,10 +377,9 @@ int main(void) {
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
 		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
-		tmproi = imgFrame1(Range(0, 720), Range(0, 1280));
+		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
-		matlines = tmproi.clone();
-		
+		roi = detectStreet(tmproi);
 		pBackSub->apply(roi, fgMask);
 		
 		blur(fgMask, fgMask, Size(13, 13), Point(-1, -1));
@@ -393,17 +400,16 @@ int main(void) {
 			}
 		}
 		countdatacartime();
-		line(tmproi, Point(0, imgLineY), Point(tmproi.size().width, imgLineY), 1, 8, 0);
+		line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
 		for (int i = 0; i < datacar.size(); i++) {
 			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
 		cout << "-------------------------------------" << endl;
-		detectStreet(matlines, tmproi);
+		
 		
 		//show the current frame and the fg masks
-		cv::imshow("Frame", imgFrame1);
-		cv::imshow("FG Mask", fgMask);
-		cv::imshow("ROI", roi);
+		imshow("FG Mask", fgMask);
+		imshow("ROI", roi);
 		if ((capVideo.get(1) + 1) < capVideo.get(7)) {
 			capVideo.read(imgFrame1);
 		}
