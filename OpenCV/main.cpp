@@ -242,16 +242,15 @@ Mat detectStreet(Mat roi) {
 		cvtColor(matlines, mask1, COLOR_RGB2GRAY);
 		Canny(mask1, mask1, 50, 150);
 
-		HoughLinesP(mask1, lines, 1, CV_PI / 180, 200, 100, 250);
+		HoughLinesP(mask1, lines, 1, CV_PI / 180, 300, 100, 250);
 		firstframe = true;
 		cout << "Count of lines: " << lines.size() << endl;
 		for (size_t i = 0; i < lines.size(); i++) {
 			Vec4i l = lines[i];
 			double x, y;
-			line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 255, 0), 3, LINE_AA);
 			LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
-				
+				//line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(125, 0, 125), 3, LINE_AA);
 				if (l[1] < imgLineY) {
 					tmplines.push_back(l);
 				}
@@ -266,9 +265,18 @@ Mat detectStreet(Mat roi) {
 		LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
 		int tmpx = x;
-
-		LineLineIntersect(tmplines2[0][0], tmplines2[0][1], tmplines2[0][2], tmplines2[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-		line(roi, Point(tmplines2[0][0], tmplines2[0][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
+		float sizeline = 0;
+		float tmpsizeline = 0;
+		int index;
+		for (int i = 0; i < tmplines2.size(); i++) {
+			tmpsizeline = tmplines2[i][1] - tmplines2[i][3];
+			if (tmpsizeline > sizeline && tmplines2[i][0] != tmplines2[i][2]) {
+				sizeline = tmpsizeline;
+				index = i;
+			}
+		}
+		LineLineIntersect(tmplines2[index][0], tmplines2[index][1], tmplines2[index][2], tmplines2[index][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(tmplines2[index][0], tmplines2[index][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 
 		//street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
 		tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
@@ -280,14 +288,13 @@ Mat detectStreet(Mat roi) {
 	}
 
 	
-	/*imshow("Mask1", mask1);
-	imshow("roi2", roi);*/
+	imshow("Mask1", mask1);
+	imshow("roi2", roi);
 	cout << "-------------------------------------" << endl;
 	return roi;
 }
 
 string openVideo() {
-	cout << "Which Video do you want to use?" << endl;
 	string path;
 	string videos[6] = { "CarsDrivingUnderBridge.mp4", "HighwayTraffic2.mp4", "HighwayTraffic3.mp4" , "nighthighway.mp4" , "nightvideo.mp4" , "rainvideo.mp4"};
 	int choise = 0;
@@ -319,7 +326,35 @@ string openVideo() {
 	return path;
 }
 
+bool askActiveLinie() {
+	int choise = 0;
+	string tmp;
+	bool endwhile = false;
+	bool activeline;
+	while (!endwhile) {
+		cout << "Do you want lines?" << endl;
+		cout << "You have the choise between 0 and 1" << endl;
+		cout << "0 for detect line off and 1 for detect line on" << endl;
+		cin >> tmp;
+		istringstream(tmp) >> choise;
+		if (choise < 0 || choise > 1) {
+			cout << "Error" << endl;
+		}
+		else {
+			endwhile = true;
+			if (choise == 0) {
+				activeline = false;
+			}
+			else {
+				activeline = true;
+			}
+		}
+	}
+	return activeline;
+}
+
 int main(void) {
+	bool activeline = askActiveLinie();
 	string path = openVideo();
 	//int carCount = 0;
 	
@@ -379,7 +414,10 @@ int main(void) {
 		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
 		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
-		roi = detectStreet(tmproi);
+		if (activeline) {
+			roi = detectStreet(tmproi);
+		}
+		
 		pBackSub->apply(roi, fgMask);
 		
 		blur(fgMask, fgMask, Size(13, 13), Point(-1, -1));
@@ -419,7 +457,7 @@ int main(void) {
 		}
 		frameCount++;
 
-		char b = waitKey(fps);
+ 		char b = waitKey(fps);
 		if (b == '+') {
 			fps++;
 		}
