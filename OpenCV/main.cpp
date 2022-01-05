@@ -51,6 +51,8 @@ void showLine() {
 }
 
 static void onCounter(int event, int x, int y, int, void*) {
+	cout << "Event ID:" << event << endl;
+	cout << "Vertical: " << vertical << endl;
 	switch (event) {
 		case  EVENT_LBUTTONDOWN:
 			P3.x = x;
@@ -60,7 +62,12 @@ static void onCounter(int event, int x, int y, int, void*) {
 			break;
 
 		case EVENT_RBUTTONDOWN:
-			vertical != vertical;
+			if (vertical) {
+				vertical = false;
+			}
+			else {
+				vertical = true;
+			}
 
 		default:
 			break;
