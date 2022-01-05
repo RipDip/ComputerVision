@@ -51,8 +51,6 @@ void showLine() {
 }
 
 static void onCounter(int event, int x, int y, int, void*) {
-	cout << "Event ID:" << event << endl;
-	cout << "Vertical: " << vertical << endl;
 	switch (event) {
 		case  EVENT_LBUTTONDOWN:
 			P3.x = x;
@@ -62,12 +60,7 @@ static void onCounter(int event, int x, int y, int, void*) {
 			break;
 
 		case EVENT_RBUTTONDOWN:
-			if (vertical) {
-				vertical = false;
-			}
-			else {
-				vertical = true;
-			}
+			vertical = !vertical;
 
 		default:
 			break;
@@ -460,6 +453,7 @@ int main(void) {
 		//show the current frame and the fg masks
 		imshow("FG Mask", fgMask);
 		imshow("ROI", roi);
+		imshow("Source", imgFrame1);
 		if ((capVideo.get(1) + 1) < capVideo.get(7)) {
 			capVideo.read(imgFrame1);
 		}
