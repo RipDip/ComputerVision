@@ -393,10 +393,14 @@ int main(void) {
 	strcCap >> strucFrame;
 	namedWindow("Struc", 1);
 	setMouseCallback("Struc", onMouse, NULL);
+	putText(strucFrame, "Press Space after ROI is set", Point(strucFrame.cols / 2 - 220, 80), FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 2);
 	imshow("Struc", strucFrame);
 	while (condition) {
-		cout << "Press Enter After ROI is selected" << endl;
-		waitKey(0);
+		cout << "Press Space after ROI is selected" << endl;
+		char ch = waitKey();
+		if (ch == ' ') {
+			condition = false;
+		}
 		cout << "P1:(" << P1.x << ", " << P1.y << ")" << endl;
 		cout << "P2:(" << P2.x << ", " << P2.y << ")" << endl;
 		cout << "ROI:(" << ROIR.x << ", " << ROIR.y <<  ", " << ROIR.width << ", " << ROIR.height << ")" << endl;
@@ -406,10 +410,11 @@ int main(void) {
 	namedWindow("CounterLine", 1);
 	setMouseCallback("CounterLine", onCounter, NULL);
 	strucFrame = strucFrame(ROIR);
+	putText(strucFrame, "Press Space after Countbar is set", Point(strucFrame.cols / 4, 80), FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 2);
 	imshow("CounterLine", strucFrame);
 	condition = true;
 	while (condition) {
-		cout << "Press Enter After ROI is selected" << endl;
+		cout << "Press Space after Countbar is set" << endl;
 		char c = waitKey();
 		if (c == ' ') {
 			condition = false;
