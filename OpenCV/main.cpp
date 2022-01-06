@@ -139,7 +139,7 @@ void countdatacartime() {
 			datacartime.erase(datacartime.begin() + i);
 		}
 
-		else if (datacar[i].tl().y < imgLineY) {
+		else if (datacar[i].br().y < P3.y) {
 			cout << "Outside" << endl;
 			datacar.erase(datacar.begin() + i);
 			datacartime.erase(datacartime.begin() + i);
@@ -178,18 +178,9 @@ void newRect(Rect data) {
 
 	}
 	//midpoint from car = Point(data.x + data.width/2, data.y + data.height/2)
-	//not functional
-	/*if (contoursline.size() > 0) {
-		for (size_t i = 0; i < contoursline.size(); i++) {
-			if (pointPolygonTest(contoursline[i], data.tl(), true) < 0) {
-				cout << "Outside map" << endl;
-				newcar = false;
-			}
-		}
-	}*/
 
 	//than new car add to datacar
-	if (data.tl().y > imgLineY && newcar) {
+	if (data.tl().y > P3.y && newcar) {
 		cout << "New car" << endl;
 		countCar++;
 		datacar.push_back(data);
@@ -244,7 +235,6 @@ Mat detectStreet(Mat roi) {
 
 		HoughLinesP(mask1, lines, 1, CV_PI / 180, 300, 100, 250);
 		firstframe = true;
-		cout << "Count of lines: " << lines.size() << endl;
 		for (size_t i = 0; i < lines.size(); i++) {
 			Vec4i l = lines[i];
 			double x, y;
@@ -260,7 +250,6 @@ Mat detectStreet(Mat roi) {
 			}
 		}
 	}
-	cout << "Count of lines: " << tmplines.size() << endl;
 	if (tmplines.size() > 0) {
 		LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
@@ -288,8 +277,8 @@ Mat detectStreet(Mat roi) {
 	}
 
 	
-	imshow("Mask1", mask1);
-	imshow("roi2", roi);
+	/*imshow("Mask1", mask1);
+	imshow("roi2", roi);*/
 	cout << "-------------------------------------" << endl;
 	return roi;
 }
@@ -413,14 +402,18 @@ int main(void) {
 			condition = false;
 		}
 	}
+
 	destroyWindow("CounterLine");
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
 		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
+		if (P3.y != 0) {
+			line(roi, Point(0, P3.y), Point(roi.size().width, P3.y), 1, 8, 0);
+		}
 		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
 		if (activeline) {
-			roi = detectStreet(tmproi);
+			imgFrame1 = detectStreet(imgFrame1);
 		}
 		
 		pBackSub->apply(roi, fgMask);
@@ -443,7 +436,7 @@ int main(void) {
 			}
 		}
 		countdatacartime();
-		line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
+		//line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
 		for (int i = 0; i < datacar.size(); i++) {
 			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
