@@ -139,7 +139,7 @@ void countdatacartime() {
 			datacartime.erase(datacartime.begin() + i);
 		}
 
-		else if (datacar[i].br().y < P3.y) {
+		else if (datacar[i].br().y < ROIR.y) {
 			cout << "Outside" << endl;
 			datacar.erase(datacar.begin() + i);
 			datacartime.erase(datacartime.begin() + i);
@@ -404,12 +404,12 @@ int main(void) {
 	}
 
 	destroyWindow("CounterLine");
+	
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
-		roi = imgFrame1(Range(ROIR.y, ROIR.y + ROIR.height), Range(ROIR.x, ROIR.x + ROIR.width));
-		if (P3.y != 0) {
-			line(roi, Point(0, P3.y), Point(roi.size().width, P3.y), 1, 8, 0);
-		}
+		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
+		line(imgFrame1(ROIR), start, ende, Scalar(0, 255, 0), 2);
+		roi = imgFrame1(ROIR);
 		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
 		if (activeline) {
