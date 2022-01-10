@@ -14,6 +14,7 @@ using namespace cv;
 
 vector<Rect> datacar;
 vector<int> datacartime;
+vector<int> datacarcount;
 vector<vector<Point>> contoursline;
 int datacarhealth = 2;
 int maxy = 500;
@@ -134,16 +135,25 @@ static void onMouse(int event, int x, int y, int, void*){
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
 		datacartime[i] = datacartime[i] + 1;
-		if (datacartime[i] >= datacarhealth) {
-			datacar.erase(datacar.begin() + i);
-			datacartime.erase(datacartime.begin() + i);
+		if ((datacar[i].y + datacar[i].height / 2) < P3.y && datacarcount[i] == 0) {
+			countCar++;
+			datacarcount[i] = 1;
+			cout << "Car was counted" << endl;
 		}
 
-		else if (datacar[i].br().y < ROIR.y) {
+		if (datacartime[i] >= datacarhealth) {
+			cout << "Car was not a real car" << endl;
+			datacar.erase(datacar.begin() + i);
+			datacartime.erase(datacartime.begin() + i);
+			datacarcount.erase(datacarcount.begin() + i);
+		}
+
+		/*else if (datacar[i].br().y > ROIR.y + ROIR.height || datacar[i].br().y < ROIR.height) {
 			cout << "Outside" << endl;
 			datacar.erase(datacar.begin() + i);
 			datacartime.erase(datacartime.begin() + i);
-		}
+			datacarcount.erase(datacarcount.begin() + i);
+		}*/
 	}
 }
 
@@ -156,13 +166,8 @@ void newRect(Rect data) {
 	int range = 60;
 	bool newcar = true;
 	//first ckeck if the car is new
-	//cout << "Data x: " << data.x << endl;
-	//cout << "Data y: " << data.y << endl;
 	cout << "Count Car: " << countCar << endl;
 	for (int i = 0; i < datacar.size(); i++) {
-		//cout << "Datacar x: " << datacar[i].x << " von Zahl: " << i << endl;
-		//cout << "Datacar y: " << datacar[i].y << " von Zahl: " << i << endl;
-
 		if ((inRange(datacar[i].x - range, datacar[i].x + range, data.x) && inRange(datacar[i].y - range, datacar[i].y + range, data.y))) {
 			cout << "Not a new car" << endl;
 			datacar[i] = data;
@@ -180,11 +185,11 @@ void newRect(Rect data) {
 	//midpoint from car = Point(data.x + data.width/2, data.y + data.height/2)
 
 	//than new car add to datacar
-	if (data.tl().y > P3.y && newcar) {
+	if (newcar) {
 		cout << "New car" << endl;
-		countCar++;
 		datacar.push_back(data);
 		datacartime.push_back(0);
+		datacarcount.push_back(0);
 	}
 }
 
@@ -428,7 +433,7 @@ int main(void) {
 
 		for (unsigned int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
-			if (area > 2000) {
+			if (area > 1000) {
 				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
 				data = boundingRect(cont[i]);
 				newRect(data);
