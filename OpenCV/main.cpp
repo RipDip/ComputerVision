@@ -347,6 +347,78 @@ bool askActiveLinie() {
 	return activeline;
 }
 
+Mat histogramm(Mat imgFrame1) {
+	/*vector<Mat> bgr_planes;
+	split(imgFrame1, bgr_planes);
+	int histSize = 256;
+	float range[] = { 0, 256 };
+	const float* histRange[] = { range };
+	bool uniform = true, accumulate = false;
+	Mat b_hist, g_hist, r_hist;
+	calcHist(&bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, histRange, uniform, accumulate);
+	calcHist(&bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, histRange, uniform, accumulate);
+	calcHist(&bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, histRange, uniform, accumulate);
+	int hist_w = 512, hist_h = 400;
+	int bin_w = cvRound((double)hist_w / histSize);
+	Mat histImage(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
+	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	for (int i = 1; i < histSize; i++)
+	{
+		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
+			Point(bin_w * (i), hist_h - cvRound(b_hist.at<float>(i))),
+			Scalar(255, 0, 0), 2, 8, 0);
+		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
+			Point(bin_w * (i), hist_h - cvRound(g_hist.at<float>(i))),
+			Scalar(0, 255, 0), 2, 8, 0);
+		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
+			Point(bin_w * (i), hist_h - cvRound(r_hist.at<float>(i))),
+			Scalar(0, 0, 255), 2, 8, 0);
+		b_hist.at<float>(i);
+		cout << "Blue.x1: " << bin_w * (i - 1) << " Blue.y1: " << hist_h - cvRound(b_hist.at<float>(i - 1)) << " Blue.x2: " << bin_w * (i) << " Blue.y2: " << hist_h - cvRound(b_hist.at<float>(i)) << endl;
+	}
+	imshow("calcHist Demo", histImage);*/
+	// calculate histogram of the image
+	Mat img, hist, weighted_hist;
+	int hsize = 256;
+	float range[] = { 0, 256 };
+	const float* histRange[] = { range };
+	Mat tmpFrame1;
+	cvtColor(imgFrame1, tmpFrame1, COLOR_BGRA2GRAY);
+	calcHist(&tmpFrame1, 1, 0, Mat(), hist, 1, &hsize, histRange, true, false);
+
+	// calculate weighted histogram
+	weighted_hist = hist / sum(hist);
+
+	// calculate cumulative histogram
+	Mat acc_hist = Mat::zeros(weighted_hist.size(), weighted_hist.type());
+	acc_hist.at<float>(0) = weighted_hist.at<float>(0);
+	for (int i = 1; i < 256; i++)
+	{
+		acc_hist.at<float>(i) = weighted_hist.at<float>(i) + acc_hist.at<float>(i - 1);
+	}
+	acc_hist = acc_hist * 255;
+
+	// Mapping
+	Mat imgClone = Mat::zeros(tmpFrame1.size(), CV_32FC1);
+	tmpFrame1.convertTo(imgClone, CV_32FC1);
+	Mat output = Mat::zeros(tmpFrame1.size(), CV_32FC1);
+	for (int m = 0; m < tmpFrame1.rows; m++)
+	{
+		for (int n = 0; n < tmpFrame1.cols; n++)
+		{
+			output.at<float>(m, n) = acc_hist.at<float>(imgClone.at<float>(m, n));
+		}
+	}
+
+	// quantize output
+	output.convertTo(output, CV_8UC1);
+	namedWindow("output", WINDOW_AUTOSIZE);
+	imshow("output", output);
+	return imgFrame1;
+}
+
 int main(void) {
 	bool activeline = askActiveLinie();
 	string path = openVideo();
@@ -372,7 +444,7 @@ int main(void) {
 	vector<Vec4i> hierarchy, hierarchy2;
 	vector<Mat> result_planes, result_norm_planes;
 	int area;
-	int fps = 1;
+	int fps = 0;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
 
@@ -412,6 +484,7 @@ int main(void) {
 	
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
+		imgFrame1 = histogramm(imgFrame1);
 		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
 		line(imgFrame1(ROIR), start, ende, Scalar(0, 255, 0), 2);
 		roi = imgFrame1(ROIR);
