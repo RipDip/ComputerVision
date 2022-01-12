@@ -197,7 +197,7 @@ inline double Det(double a, double b, double c, double d){
 	return a * d - b * c;
 }
 
-bool LineLineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& ixOut, double& iyOut) {
+bool lineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& ixOut, double& iyOut) {
 	double detL1 = Det(x1, y1, x2, y2);
 	double detL2 = Det(x3, y3, x4, y4);
 	double x1mx2 = x1 - x2;
@@ -207,8 +207,6 @@ bool LineLineIntersect(double x1, double y1, double x2, double y2, double x3, do
 
 	double denom = Det(x1mx2, y1my2, x3mx4, y3my4);
 	if (denom == 0.0){
-		ixOut = NAN;
-		iyOut = NAN;
 		return false;
 	}
 
@@ -243,7 +241,7 @@ Mat detectStreet(Mat roi) {
 		for (size_t i = 0; i < lines.size(); i++) {
 			Vec4i l = lines[i];
 			double x, y;
-			LineLineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+			lineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
 				//line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(125, 0, 125), 3, LINE_AA);
 				if (l[1] < imgLineY) {
@@ -256,7 +254,7 @@ Mat detectStreet(Mat roi) {
 		}
 	}
 	if (tmplines.size() > 0) {
-		LineLineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		lineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
 		int tmpx = x;
 		float sizeline = 0;
@@ -269,7 +267,7 @@ Mat detectStreet(Mat roi) {
 				index = i;
 			}
 		}
-		LineLineIntersect(tmplines2[index][0], tmplines2[index][1], tmplines2[index][2], tmplines2[index][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		lineIntersect(tmplines2[index][0], tmplines2[index][1], tmplines2[index][2], tmplines2[index][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(tmplines2[index][0], tmplines2[index][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 
 		//street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
@@ -347,77 +345,77 @@ bool askActiveLinie() {
 	return activeline;
 }
 
+Mat equalize(Mat& imgFrame1) {
+	int flat_img[256] = { 0 };
+	int cumsum[256] = { 0 };
+	int memory = 0;
+	int normalize_img[256] = { 0 };
+
+	for (int i = 0; i < imgFrame1.rows; i++) {
+		for (int j = 0; j < imgFrame1.cols; j++) {
+			int index;
+			index = static_cast<int>(imgFrame1.at<uchar>(i, j));
+			flat_img[index]++;
+		}
+	}
+
+	for (int i = 0; i < 256; i++) {
+		memory += flat_img[i];
+		cumsum[i] = memory;
+	}
+
+	for (int i = 0; i < 256; i++) {
+		normalize_img[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
+		normalize_img[i] = static_cast<int>(normalize_img[i]);
+	}
+
+	Mat result(imgFrame1.rows, imgFrame1.cols, CV_8U);
+
+	Mat_<uchar>::iterator itr_result = result.begin<uchar>();
+	Mat_<uchar>::iterator it_begin = imgFrame1.begin<uchar>();
+	Mat_<uchar>::iterator itr_end = imgFrame1.end<uchar>();
+
+	while (it_begin != itr_end) {
+		int intensity_value = static_cast<int>(*it_begin);
+		*itr_result = normalize_img[intensity_value];
+		itr_result++;
+		it_begin++;
+	}
+
+	return result;
+}
+
 Mat histogramm(Mat imgFrame1) {
-	/*vector<Mat> bgr_planes;
+	cvtColor(imgFrame1, imgFrame1, COLOR_BGRA2GRAY);
+
+	Mat img_out;
+	img_out = equalize(imgFrame1);
+
+	imshow("New Images", img_out);
+
+	vector<Mat> bgr_planes;
 	split(imgFrame1, bgr_planes);
 	int histSize = 256;
 	float range[] = { 0, 256 };
 	const float* histRange[] = { range };
+	
 	bool uniform = true, accumulate = false;
 	Mat b_hist, g_hist, r_hist;
-	calcHist(&bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, histRange, uniform, accumulate);
-	calcHist(&bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, histRange, uniform, accumulate);
-	calcHist(&bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, histRange, uniform, accumulate);
-	int hist_w = 512, hist_h = 400;
+	calcHist(&img_out, 1, 0, Mat(), b_hist, 1, &histSize, histRange, uniform, accumulate);
+	int hist_w = 520, hist_h = 420;
 	int bin_w = cvRound((double)hist_w / histSize);
 	Mat histImage(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
 	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-	for (int i = 1; i < histSize; i++)
-	{
-		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
-			Point(bin_w * (i), hist_h - cvRound(b_hist.at<float>(i))),
-			Scalar(255, 0, 0), 2, 8, 0);
-		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
-			Point(bin_w * (i), hist_h - cvRound(g_hist.at<float>(i))),
-			Scalar(0, 255, 0), 2, 8, 0);
-		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
-			Point(bin_w * (i), hist_h - cvRound(r_hist.at<float>(i))),
-			Scalar(0, 0, 255), 2, 8, 0);
+	for (int i = 1; i < histSize; i++){
+		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))), Point(bin_w * (i), hist_h - cvRound(b_hist.at<float>(i))), Scalar(255, 0, 0), 2, 8, 0);
 		b_hist.at<float>(i);
-		cout << "Blue.x1: " << bin_w * (i - 1) << " Blue.y1: " << hist_h - cvRound(b_hist.at<float>(i - 1)) << " Blue.x2: " << bin_w * (i) << " Blue.y2: " << hist_h - cvRound(b_hist.at<float>(i)) << endl;
 	}
-	imshow("calcHist Demo", histImage);*/
-	// calculate histogram of the image
-	Mat img, hist, weighted_hist;
-	int hsize = 256;
-	float range[] = { 0, 256 };
-	const float* histRange[] = { range };
-	Mat tmpFrame1;
-	cvtColor(imgFrame1, tmpFrame1, COLOR_BGRA2GRAY);
-	calcHist(&tmpFrame1, 1, 0, Mat(), hist, 1, &hsize, histRange, true, false);
+	imshow("calcHist Demo", histImage);
 
-	// calculate weighted histogram
-	weighted_hist = hist / sum(hist);
+	return img_out;
 
-	// calculate cumulative histogram
-	Mat acc_hist = Mat::zeros(weighted_hist.size(), weighted_hist.type());
-	acc_hist.at<float>(0) = weighted_hist.at<float>(0);
-	for (int i = 1; i < 256; i++)
-	{
-		acc_hist.at<float>(i) = weighted_hist.at<float>(i) + acc_hist.at<float>(i - 1);
-	}
-	acc_hist = acc_hist * 255;
-
-	// Mapping
-	Mat imgClone = Mat::zeros(tmpFrame1.size(), CV_32FC1);
-	tmpFrame1.convertTo(imgClone, CV_32FC1);
-	Mat output = Mat::zeros(tmpFrame1.size(), CV_32FC1);
-	for (int m = 0; m < tmpFrame1.rows; m++)
-	{
-		for (int n = 0; n < tmpFrame1.cols; n++)
-		{
-			output.at<float>(m, n) = acc_hist.at<float>(imgClone.at<float>(m, n));
-		}
-	}
-
-	// quantize output
-	output.convertTo(output, CV_8UC1);
-	namedWindow("output", WINDOW_AUTOSIZE);
-	imshow("output", output);
-	return imgFrame1;
 }
+
 
 int main(void) {
 	bool activeline = askActiveLinie();
@@ -444,7 +442,7 @@ int main(void) {
 	vector<Vec4i> hierarchy, hierarchy2;
 	vector<Mat> result_planes, result_norm_planes;
 	int area;
-	int fps = 0;
+	int fps = 1;
 	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
 	Rect data;
 
@@ -484,17 +482,19 @@ int main(void) {
 	
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
-		imgFrame1 = histogramm(imgFrame1);
+		//imgFrame1 = histogramm(imgFrame1);
+		
 		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
 		line(imgFrame1(ROIR), start, ende, Scalar(0, 255, 0), 2);
 		roi = imgFrame1(ROIR);
+		Mat newFrame = histogramm(imgFrame1(ROIR));
 		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
 		if (activeline) {
 			imgFrame1 = detectStreet(imgFrame1);
 		}
 		
-		pBackSub->apply(roi, fgMask);
+		pBackSub->apply(newFrame, fgMask);
 		
 		blur(fgMask, fgMask, Size(13, 13), Point(-1, -1));
 		threshold(fgMask, fgMask, 127, 255, THRESH_BINARY);
