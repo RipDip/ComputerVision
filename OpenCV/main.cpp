@@ -147,13 +147,6 @@ void countdatacartime() {
 			datacartime.erase(datacartime.begin() + i);
 			datacarcount.erase(datacarcount.begin() + i);
 		}
-
-		/*else if (datacar[i].br().y > ROIR.y + ROIR.height || datacar[i].br().y < ROIR.height) {
-			cout << "Outside" << endl;
-			datacar.erase(datacar.begin() + i);
-			datacartime.erase(datacartime.begin() + i);
-			datacarcount.erase(datacarcount.begin() + i);
-		}*/
 	}
 }
 
@@ -182,7 +175,6 @@ void newRect(Rect data) {
 		}
 
 	}
-	//midpoint from car = Point(data.x + data.width/2, data.y + data.height/2)
 
 	//than new car add to datacar
 	if (newcar) {
@@ -193,30 +185,31 @@ void newRect(Rect data) {
 	}
 }
 
-inline double Det(double a, double b, double c, double d){
+double Det(double a, double b, double c, double d){
 	return a * d - b * c;
 }
 
-bool lineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& ixOut, double& iyOut) {
-	double detL1 = Det(x1, y1, x2, y2);
-	double detL2 = Det(x3, y3, x4, y4);
-	double x1mx2 = x1 - x2;
-	double x3mx4 = x3 - x4;
-	double y1my2 = y1 - y2;
-	double y3my4 = y3 - y4;
+bool lineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& xOut, double& yOut) {
+	double det1 = Det(x1, y1, x2, y2);
+	double det2 = Det(x3, y3, x4, y4);
+	double x1x2 = x1 - x2;
+	double x3x4 = x3 - x4;
+	double y1y2 = y1 - y2;
+	double y3y4 = y3 - y4;
 
-	double denom = Det(x1mx2, y1my2, x3mx4, y3my4);
-	if (denom == 0.0){
+	double det = Det(x1x2, y1y2, x3x4, y3y4);
+	if (det == 0.0){
 		return false;
 	}
 
-	double xnom = Det(detL1, x1mx2, detL2, x3mx4);
-	double ynom = Det(detL1, y1my2, detL2, y3my4);
-	ixOut = xnom / denom;
-	iyOut = ynom / denom;
-	if (!isfinite(ixOut) || !isfinite(iyOut))
+	double xnom = Det(det1, x1x2, det2, x3x4);
+	double ynom = Det(det1, y1y2, det2, y3y4);
+	xOut = xnom / det;
+	yOut = ynom / det;
+	if (!isfinite(xOut) || !isfinite(yOut)){
 		return false;
-
+	}
+		
 	return true;
 }
 
@@ -243,7 +236,6 @@ Mat detectStreet(Mat roi) {
 			double x, y;
 			lineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
-				//line(roi, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(125, 0, 125), 3, LINE_AA);
 				if (l[1] < imgLineY) {
 					tmplines.push_back(l);
 				}
@@ -270,7 +262,6 @@ Mat detectStreet(Mat roi) {
 		lineIntersect(tmplines2[index][0], tmplines2[index][1], tmplines2[index][2], tmplines2[index][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(tmplines2[index][0], tmplines2[index][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 
-		//street = roi(Rect(tmplines2[0][0], imgLineY, 1280 - tmplines2[0][0], roi.size().height - imgLineY)); //x,y, width 1280 x, height 720 y
 		tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
 		tmpcontours.push_back(Point(x - 200, imgLineY));
 
@@ -279,9 +270,6 @@ Mat detectStreet(Mat roi) {
 		contoursline.push_back(tmpcontours);
 	}
 
-	
-	/*imshow("Mask1", mask1);
-	imshow("roi2", roi);*/
 	cout << "-------------------------------------" << endl;
 	return roi;
 }
@@ -378,6 +366,7 @@ Mat equalize(Mat& imgFrame1) {
 	int cumsum[256] = { 0 };
 	int memory = 0;
 	int normalize_img[256] = { 0 };
+	Mat result(imgFrame1.rows, imgFrame1.cols, CV_8U);
 
 	for (int i = 0; i < imgFrame1.rows; i++) {
 		for (int j = 0; j < imgFrame1.cols; j++) {
@@ -396,18 +385,17 @@ Mat equalize(Mat& imgFrame1) {
 		normalize_img[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
 		normalize_img[i] = static_cast<int>(normalize_img[i]);
 	}
+	
 
-	Mat result(imgFrame1.rows, imgFrame1.cols, CV_8U);
+	Mat_<uchar>::iterator tmpresult = result.begin<uchar>();
+	Mat_<uchar>::iterator begin = imgFrame1.begin<uchar>();
+	Mat_<uchar>::iterator end = imgFrame1.end<uchar>();
 
-	Mat_<uchar>::iterator itr_result = result.begin<uchar>();
-	Mat_<uchar>::iterator it_begin = imgFrame1.begin<uchar>();
-	Mat_<uchar>::iterator itr_end = imgFrame1.end<uchar>();
-
-	while (it_begin != itr_end) {
-		int intensity_value = static_cast<int>(*it_begin);
-		*itr_result = normalize_img[intensity_value];
-		itr_result++;
-		it_begin++;
+	while (begin != end) {
+		int intensity_value = static_cast<int>(*begin);
+		*tmpresult = normalize_img[intensity_value];
+		tmpresult++;
+		begin++;
 	}
 
 	return result;
@@ -449,13 +437,9 @@ int main(void) {
 	bool activeline = askActiveLinie();
 	string path = openVideo();
 	bool activehistogram = askActiveHistogram();
-	//int carCount = 0;
 	
 	capVideo.open(path);
-	//capVideo.open("Resources/CarsDrivingUnderBridge.mp4");
-	//capVideo.open("Resources/HighwayTraffic.mp4");
-	//capVideo.open("Resources/HighwayTraffic2.mp4");
-	//capVideo.open("Resources/HighwayTraffic3.mp4");
+
 	strcCap = capVideo;
 
 	if (!capVideo.isOpened()) {
@@ -511,7 +495,6 @@ int main(void) {
 	
 	while (capVideo.isOpened()) {
 		capVideo >> imgFrame1;
-		//imgFrame1 = histogramm(imgFrame1);
 		
 		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
 		line(imgFrame1(ROIR), start, ende, Scalar(0, 255, 0), 2);
