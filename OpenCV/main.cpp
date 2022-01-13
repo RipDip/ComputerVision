@@ -345,6 +345,34 @@ bool askActiveLinie() {
 	return activeline;
 }
 
+bool askActiveHistogram() {
+	int choise = 0;
+	string tmp;
+	bool endwhile = false;
+	bool activeline;
+	while (!endwhile) {
+		cout << "Do you want histogram equalize?" << endl;
+		cout << "You should enable it for night videos" << endl;
+		cout << "You have the choise between 0 and 1" << endl;
+		cout << "0 for histogram equalize off and 1 for histogram equalize on" << endl;
+		cin >> tmp;
+		istringstream(tmp) >> choise;
+		if (choise < 0 || choise > 1) {
+			cout << "Error" << endl;
+		}
+		else {
+			endwhile = true;
+			if (choise == 0) {
+				activeline = false;
+			}
+			else {
+				activeline = true;
+			}
+		}
+	}
+	return activeline;
+}
+
 Mat equalize(Mat& imgFrame1) {
 	int flat_img[256] = { 0 };
 	int cumsum[256] = { 0 };
@@ -359,12 +387,12 @@ Mat equalize(Mat& imgFrame1) {
 		}
 	}
 
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 150; i++) {
 		memory += flat_img[i];
 		cumsum[i] = memory;
 	}
 
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 150; i++) {
 		normalize_img[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
 		normalize_img[i] = static_cast<int>(normalize_img[i]);
 	}
@@ -420,6 +448,7 @@ Mat histogramm(Mat imgFrame1) {
 int main(void) {
 	bool activeline = askActiveLinie();
 	string path = openVideo();
+	bool activehistogram = askActiveHistogram();
 	//int carCount = 0;
 	
 	capVideo.open(path);
@@ -487,7 +516,14 @@ int main(void) {
 		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
 		line(imgFrame1(ROIR), start, ende, Scalar(0, 255, 0), 2);
 		roi = imgFrame1(ROIR);
-		Mat newFrame = histogramm(imgFrame1(ROIR));
+		Mat newFrame;
+		if (activehistogram) {
+			newFrame = histogramm(imgFrame1(ROIR));
+		}
+		else {
+			newFrame = imgFrame1(ROIR);
+		}
+			
 		tmproi = imgFrame1.clone();
 		imgLineY = tmproi.size().height / 2.85;
 		if (activeline) {
@@ -506,15 +542,13 @@ int main(void) {
 
 		for (unsigned int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
-			if (area > 1000) {
+			if (area > 2000) {
 				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
 				data = boundingRect(cont[i]);
 				newRect(data);
-				//rectangle(roi, Point(data.x, data.y), Point(data.x + data.width, data.y + data.height), Scalar(255, 0, 0), 2, 8, 0);
 			}
 		}
 		countdatacartime();
-		//line(roi, Point(0, imgLineY), Point(roi.size().width, imgLineY), 1, 8, 0);
 		for (int i = 0; i < datacar.size(); i++) {
 			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
