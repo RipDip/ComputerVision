@@ -12,30 +12,40 @@
 using namespace std;
 using namespace cv;
 
-vector<Rect> datacar;
-vector<int> datacartime;
-vector<int> datacarcount;
-vector<vector<Point>> contoursline;
-int datacarhealth = 2;
-int maxy = 500;
-int countCar = 0;
-float imgLineY;
-bool condition = true;
+Mat imgFrame1;
+Mat strucFrame;
+Mat strucCopy;
+Mat fgMask;
+
+VideoCapture capVideo;
+VideoCapture strcCap;
+
 Point P1;
 Point P2;
 Point P3;
 Point start, ende;
 Rect2i ROIR(0, 0, 0, 0);
+
+vector<Rect> datacar;
+vector<int> datacartime;
+vector<int> datacarcount;
+vector<vector<Point>> contoursline;
+
+int datacarhealth = 2;
+int maxy = 500;
+int countCar = 0;
+
+float imgLineY;
+
+bool condition = true;
 bool clicked = false;
 bool vertical = false;
 
-VideoCapture capVideo;
-VideoCapture strcCap;
-
-Mat imgFrame1;
-Mat strucFrame;
-Mat strucCopy;
-Mat fgMask;
+/*
+* showRectangle is a function for 
+* prewviewing the ROI area while trying
+* to set it
+*/
 
 void showRectangle() {
 	strucCopy = strucFrame.clone();
@@ -44,12 +54,27 @@ void showRectangle() {
 	strucFrame = strucCopy.clone();
 }
 
+/*
+* showLine is a function for
+* prewviewing the Countbar in
+* the ROI
+*/
+
 void showLine() {
 	strucCopy = strucFrame.clone();
 	line(strucFrame, start, ende, Scalar(0, 255, 0), 2);
 	imshow("CounterLine", strucFrame);
 	strucFrame = strucCopy.clone();
 }
+
+/*
+* Callbackfunction for setting the Countbar
+* @param event What event is happening LBUTTONDOWN/RBUTTONDOWN and so on
+* @param x Mouse cords of x
+* @param y Mouse cords of y
+* @param int flags specific buttons like altkey and shiftkey
+* @param void* userdata This pointer will be passed to the callback function
+*/
 
 static void onCounter(int event, int x, int y, int, void*) {
 	switch (event) {
@@ -80,6 +105,15 @@ static void onCounter(int event, int x, int y, int, void*) {
 	}
 	showLine();
 }
+
+/*
+* Callbackfunction for setting the ROI
+* @param event What event is happening LBUTTONDOWN/RBUTTONDOWN and so on
+* @param x Mouse cords of x
+* @param y Mouse cords of y
+* @param int flags specific buttons like altkey and shiftkey
+* @param void* userdata This pointer will be passed to the callback function
+*/
 
 static void onMouse(int event, int x, int y, int, void*){
 	switch (event) {
@@ -132,6 +166,11 @@ static void onMouse(int event, int x, int y, int, void*){
 	showRectangle();
 }
 
+/*
+* A function for counting the cars
+* and to see if the car is real or not
+*/
+
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
 		datacartime[i] = datacartime[i] + 1;
@@ -150,10 +189,25 @@ void countdatacartime() {
 	}
 }
 
+/*
+* A function that returns true or false
+* if the element is in range of specific area
+* @param low start point
+* @param hight end point
+* @param x should be a point between low and high
+* @return true or false
+*/
+
 bool inRange(int low, int high, int x){
 	return (low <= x && x <= high);
 }
 
+/*
+* A function that checks if the
+* rectangle is a new rectangle or if a rectangle
+* shows inside of an other rectangle or if its the same rectangle
+* @param data the Rectangle of the detected car
+*/
 
 void newRect(Rect data) {
 	int range = 60;
@@ -274,6 +328,12 @@ Mat detectStreet(Mat roi) {
 	return roi;
 }
 
+/*
+* A function for selecting a video
+* in the resource folder
+* @return path string for the video file
+*/
+
 string openVideo() {
 	string path;
 	string videos[6] = { "CarsDrivingUnderBridge.mp4", "HighwayTraffic2.mp4", "HighwayTraffic3.mp4" , "nighthighway.mp4" , "nightvideo.mp4" , "rainvideo.mp4"};
@@ -306,6 +366,11 @@ string openVideo() {
 	return path;
 }
 
+/*
+* A function for turning the streetdectection on/off 
+* @return activeline true or false for the streetdectection
+*/
+
 bool askActiveLinie() {
 	int choise = 0;
 	string tmp;
@@ -332,6 +397,11 @@ bool askActiveLinie() {
 	}
 	return activeline;
 }
+
+/*
+* A function for turning the histogram on/off
+* @return activeline true or false for the histogram
+*/
 
 bool askActiveHistogram() {
 	int choise = 0;
