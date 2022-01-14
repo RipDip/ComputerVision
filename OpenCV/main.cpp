@@ -34,6 +34,7 @@ vector<vector<Point>> contoursline;
 int datacarhealth = 2;
 int maxy = 500;
 int countCar = 0;
+int indexLine2;
 
 float imgLineY;
 
@@ -239,9 +240,34 @@ void newRect(Rect data) {
 	}
 }
 
-double Det(double a, double b, double c, double d){
-	return a * d - b * c;
+/**
+ * Calculate the determinant of the two lines
+ * 
+ * @param x1 x value from the first line
+ * @param y1 y value from the first line
+ * @param x2 x value from the second line
+ * @param y2 y value from the second line
+ * @return The result of the new Point
+ */
+double Det(double x1, double y1, double x2, double y2){
+	return x1 * y2 - y1 * x2;
 }
+
+/**
+ * Calculate the Point where two lines are meet
+ * 
+ * @param x1 First x of the first line
+ * @param y1 First y of the first line
+ * @param x2 Second x of the first line
+ * @param y2 Second y of the first line
+ * @param x3 First x of the second line
+ * @param y3 First y of the second line
+ * @param x4 Second x of the second line
+ * @param y4 Second y of the second line
+ * @param xOut The result for the new x value
+ * @param yOut the result for the new y value
+ * @return if the new Point is calculated
+ */
 
 bool lineIntersect(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4, double& xOut, double& yOut) {
 	double det1 = Det(x1, y1, x2, y2);
@@ -267,6 +293,13 @@ bool lineIntersect(double x1, double y1, double x2, double y2, double x3, double
 	return true;
 }
 
+/**
+ * Calculates the two lines from the street in the first frame and then
+ * 
+ * @param roi The image in which the road should be recognized. The image should be the original image and no filter has already been applied 
+ * @return The image of the street with the two new lines.
+ */
+
 Mat detectStreet(Mat roi) {
 	Mat static mask1;
 	Mat static street;
@@ -278,6 +311,8 @@ Mat detectStreet(Mat roi) {
 	vector<Point> tmpcontours;
 	bool static firstframe = false;
 	double x, y;
+	float sizeline = 0;
+	float tmpsizeline = 0;
 
 	if (!firstframe) {
 		cvtColor(matlines, mask1, COLOR_RGB2GRAY);
@@ -298,41 +333,31 @@ Mat detectStreet(Mat roi) {
 				}
 			}
 		}
-	}
-	if (tmplines.size() > 0) {
-		lineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
-		int tmpx = x;
-		float sizeline = 0;
-		float tmpsizeline = 0;
-		int index;
 		for (int i = 0; i < tmplines2.size(); i++) {
 			tmpsizeline = tmplines2[i][1] - tmplines2[i][3];
 			if (tmpsizeline > sizeline && tmplines2[i][0] != tmplines2[i][2]) {
 				sizeline = tmpsizeline;
-				index = i;
+				indexLine2 = i;
 			}
 		}
-		lineIntersect(tmplines2[index][0], tmplines2[index][1], tmplines2[index][2], tmplines2[index][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-		line(roi, Point(tmplines2[index][0], tmplines2[index][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
-
-		tmpcontours.push_back(Point(tmplines2[0][0], tmplines2[0][1]));
-		tmpcontours.push_back(Point(x - 200, imgLineY));
-
-		tmpcontours.push_back(Point(tmpx + 200, imgLineY));
-		tmpcontours.push_back(Point(tmplines[0][2], tmplines[0][3]));
-		contoursline.push_back(tmpcontours);
+	}
+	if (tmplines.size() > 0) {
+		lineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
+		
+		lineIntersect(tmplines2[indexLine2][0], tmplines2[indexLine2][1], tmplines2[indexLine2][2], tmplines2[indexLine2][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(tmplines2[indexLine2][0], tmplines2[indexLine2][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 	}
 
 	cout << "-------------------------------------" << endl;
 	return roi;
 }
 
-/*
+/**
 * A function for selecting a video
 * in the resource folder
 * @return path string for the video file
-*/
+ */
 
 string openVideo() {
 	string path;
@@ -366,10 +391,10 @@ string openVideo() {
 	return path;
 }
 
-/*
-* A function for turning the streetdectection on/off 
+/**
+* A function for turning the streetdectection on/off
 * @return activeline true or false for the streetdectection
-*/
+ */
 
 bool askActiveLinie() {
 	int choise = 0;
@@ -398,16 +423,16 @@ bool askActiveLinie() {
 	return activeline;
 }
 
-/*
-* A function for turning the histogram on/off
-* @return activeline true or false for the histogram
+/**
+* function for turning the histogram on/off
+* @return activehistogram true or false for the histogram
 */
 
 bool askActiveHistogram() {
 	int choise = 0;
 	string tmp;
 	bool endwhile = false;
-	bool activeline;
+	bool activehistogram;
 	while (!endwhile) {
 		cout << "Do you want histogram equalize?" << endl;
 		cout << "You should enable it for night videos" << endl;
@@ -421,16 +446,22 @@ bool askActiveHistogram() {
 		else {
 			endwhile = true;
 			if (choise == 0) {
-				activeline = false;
+				activehistogram = false;
 			}
 			else {
-				activeline = true;
+				activehistogram = true;
 			}
 		}
 	}
-	return activeline;
+	return activehistogram;
 }
 
+/**
+ * Tries to darken the pixels that are too bright. This images must be a gray images.
+ * 
+ * @param imgFrame1 The image that should be darkened
+ * @return the new images 
+ */
 Mat equalize(Mat& imgFrame1) {
 	int flat_img[256] = { 0 };
 	int cumsum[256] = { 0 };
@@ -471,6 +502,14 @@ Mat equalize(Mat& imgFrame1) {
 	return result;
 }
 
+/**
+ * This algorithm only works for night videos and convert.
+ * Convert the images to a gray Images and equalize this images.
+ * Create a histogramm images from the gray image
+ * 
+ * @param imgFrame1 The images that shut be improve
+ * @return The gray image that has been darkened 
+ */
 Mat histogramm(Mat imgFrame1) {
 	cvtColor(imgFrame1, imgFrame1, COLOR_BGRA2GRAY);
 
@@ -502,7 +541,11 @@ Mat histogramm(Mat imgFrame1) {
 
 }
 
-
+/**
+ * The main Programm
+ * 
+ * @return 1
+ */
 int main(void) {
 	bool activeline = askActiveLinie();
 	string path = openVideo();
