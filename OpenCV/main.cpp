@@ -8,6 +8,7 @@
 #include <opencv2/videoio.hpp>
 #include <iostream>
 #include <vector>
+#include <time.h>
 
 using namespace std;
 using namespace cv;
@@ -175,7 +176,7 @@ static void onMouse(int event, int x, int y, int, void*){
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
 		datacartime[i] = datacartime[i] + 1;
-		if ((datacar[i].y + datacar[i].height / 2) < P3.y && datacarcount[i] == 0) {
+		if ((datacar[i].y + datacar[i].height / 2) < P3.y  && (datacar[i].y + datacar[i].height / 2) > (P3.y - 50) && datacarcount[i] == 0) {
 			countCar++;
 			datacarcount[i] = 1;
 			cout << "Car was counted" << endl;
@@ -477,12 +478,12 @@ Mat equalize(Mat& imgFrame1) {
 		}
 	}
 
-	for (int i = 0; i < 150; i++) {
+	for (int i = 0; i < 160; i++) {
 		memory += flat_img[i];
 		cumsum[i] = memory;
 	}
 
-	for (int i = 0; i < 150; i++) {
+	for (int i = 0; i < 160; i++) {
 		normalize_img[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
 		normalize_img[i] = static_cast<int>(normalize_img[i]);
 	}
@@ -547,6 +548,15 @@ Mat histogramm(Mat imgFrame1) {
  * @return 1
  */
 int main(void) {
+	int frameCount = 3;
+	vector<vector<Point>> cont, cont2;
+	vector<Vec4i> hierarchy, hierarchy2;
+	vector<Mat> result_planes, result_norm_planes;
+	int area;
+	int fps = 1;
+	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
+	Rect data;
+	clock_t startTime, endTime;
 	bool activeline = askActiveLinie();
 	string path = openVideo();
 	bool activehistogram = askActiveHistogram();
@@ -563,15 +573,6 @@ int main(void) {
 	Ptr<BackgroundSubtractor> pBackSub;
 	pBackSub = createBackgroundSubtractorMOG2();
 	
-	int frameCount = 3;
-	vector<vector<Point>> cont, cont2;
-	vector<Vec4i> hierarchy, hierarchy2;
-	vector<Mat> result_planes, result_norm_planes;
-	int area;
-	int fps = 1;
-	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
-	Rect data;
-
 	strcCap >> strucFrame;
 	strcCap >> strucFrame;
 	namedWindow("Struc", 1);
@@ -607,6 +608,7 @@ int main(void) {
 	destroyWindow("CounterLine");
 	
 	while (capVideo.isOpened()) {
+		startTime = clock();
 		capVideo >> imgFrame1;
 		
 		rectangle(imgFrame1, ROIR, Scalar(0, 255, 0), 1, 8, 0);
@@ -631,9 +633,8 @@ int main(void) {
 		blur(fgMask, fgMask, Size(13, 13), Point(-1, -1));
 		threshold(fgMask, fgMask, 127, 255, THRESH_BINARY);
 
-		element = getStructuringElement(MORPH_RECT, Size(2, 2));
-		element2 = getStructuringElement(MORPH_RECT, Size(9, 9));
-		dilate(fgMask, dilation_dst, element2);
+		element = getStructuringElement(MORPH_RECT, Size(9, 9));
+		dilate(fgMask, dilation_dst, element);
 		findContours(dilation_dst, cont, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
 		for (unsigned int i = 0; i < cont.size(); i++) {
@@ -648,9 +649,13 @@ int main(void) {
 		for (int i = 0; i < datacar.size(); i++) {
 			rectangle(roi, Point(datacar[i].x, datacar[i].y), Point(datacar[i].x + datacar[i].width, datacar[i].y + datacar[i].height), Scalar(255, 0, 0), 2, 8, 0);
 		}
+
 		cout << "-------------------------------------" << endl;
 		
-		
+		endTime = clock();
+		double seconds = (double(endTime) - double(startTime))/double(CLOCKS_PER_SEC);
+		cout << "Time taken : " << seconds << " seconds" << endl;
+		cout << "FPS: " << 1/seconds << endl;
 		//show the current frame and the fg masks
 		imshow("FG Mask", fgMask);
 		imshow("ROI", roi);
@@ -671,6 +676,8 @@ int main(void) {
 		else if (b == '-') {
 			fps--;
 		}
+		
+		
 	}
 
 	return(1);
