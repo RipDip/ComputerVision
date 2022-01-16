@@ -32,12 +32,17 @@ vector<int> datacartime;
 vector<int> datacarcount;
 vector<vector<Point>> contoursline;
 
-int datacarhealth = 2;
-int countCar = 0;
-int indexLine2;
 
+int countCar = 0;
+int indexLine;
 float imgLineY;
+
+//Parameter
+int datacarhealth = 2;
 int range = 60;
+int maxLight = 160;
+int detectLineParameter[] = { 540, 740, 1200, 260, 460, 600 };
+int maxArea = 2000;
 
 bool condition = true;
 bool clicked = false;
@@ -176,7 +181,7 @@ static void onMouse(int event, int x, int y, int, void*){
 void countdatacartime() {
 	for (int i = 0; i < datacartime.size(); i++) {
 		datacartime[i] = datacartime[i] + 1;
-		if ((datacar[i].y + datacar[i].height / 2) < P3.y  && (datacar[i].y + datacar[i].height / 2) > (P3.y - 50) && datacarcount[i] == 0) {
+		if ((datacar[i].y + datacar[i].height / 2) < P3.y  && (datacar[i].y + datacar[i].height / 2) > (P3.y - range) && datacarcount[i] == 0) {
 			countCar++;
 			datacarcount[i] = 1;
 			cout << "Car was counted" << endl;
@@ -324,7 +329,7 @@ Mat detectStreet(Mat roi) {
 			Vec4i l = lines[i];
 			double x, y;
 			lineIntersect(l[0], l[1], l[2], l[3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-			if ((l[0] > 540 && l[0] < 740) || (l[2] > 1200 && l[3] > 260 && l[3] > 460) || (l[1] > 600)) {
+			if ((l[0] > detectLineParameter[0] && l[0] < detectLineParameter[1]) || (l[2] > detectLineParameter[2] && l[3] > detectLineParameter[3] && l[3] > detectLineParameter[4] || (l[1] > detectLineParameter[5]))) {
 				if (l[1] < imgLineY) {
 					tmplines.push_back(l);
 				}
@@ -337,7 +342,7 @@ Mat detectStreet(Mat roi) {
 			tmpsizeline = tmplines2[i][1] - tmplines2[i][3];
 			if (tmpsizeline > sizeline && tmplines2[i][0] != tmplines2[i][2]) {
 				sizeline = tmpsizeline;
-				indexLine2 = i;
+				indexLine = i;
 			}
 		}
 	}
@@ -345,8 +350,8 @@ Mat detectStreet(Mat roi) {
 		lineIntersect(tmplines[0][0], tmplines[0][1], tmplines[0][2], tmplines[0][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
 		line(roi, Point(x, imgLineY), Point(tmplines[0][2], tmplines[0][3]), Scalar(0, 255, 0), 3, LINE_AA);
 		
-		lineIntersect(tmplines2[indexLine2][0], tmplines2[indexLine2][1], tmplines2[indexLine2][2], tmplines2[indexLine2][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
-		line(roi, Point(tmplines2[indexLine2][0], tmplines2[indexLine2][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
+		lineIntersect(tmplines2[indexLine][0], tmplines2[indexLine][1], tmplines2[indexLine][2], tmplines2[indexLine][3], 0, imgLineY, roi.size().width, imgLineY, x, y);
+		line(roi, Point(tmplines2[indexLine][0], tmplines2[indexLine][1]), Point(x, imgLineY), Scalar(255, 255, 0), 3, LINE_AA);
 	}
 
 	cout << "-------------------------------------" << endl;
@@ -477,12 +482,12 @@ Mat equalize(Mat& imgFrame1) {
 		}
 	}
 
-	for (int i = 0; i < 160; i++) {
+	for (int i = 0; i < maxLight; i++) {
 		memory += flatimg[i];
 		cumsum[i] = memory;
 	}
 
-	for (int i = 0; i < 160; i++) {
+	for (int i = 0; i < maxLight; i++) {
 		normalizeimg[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
 		normalizeimg[i] = static_cast<int>(normalizeimg[i]);
 	}
@@ -538,7 +543,6 @@ Mat histogramm(Mat imgFrame1) {
 	imshow("calcHist Demo", histImage);
 
 	return img_out;
-
 }
 
 /**
@@ -637,7 +641,7 @@ int main(void) {
 
 		for (unsigned int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
-			if (area > 2000) {
+			if (area > maxArea) {
 				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
 				data = boundingRect(cont[i]);
 				newRect(data);
