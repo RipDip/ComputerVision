@@ -33,11 +33,11 @@ vector<int> datacarcount;
 vector<vector<Point>> contoursline;
 
 int datacarhealth = 2;
-int maxy = 500;
 int countCar = 0;
 int indexLine2;
 
 float imgLineY;
+int range = 60;
 
 bool condition = true;
 bool clicked = false;
@@ -212,7 +212,6 @@ bool inRange(int low, int high, int x){
 */
 
 void newRect(Rect data) {
-	int range = 60;
 	bool newcar = true;
 	//first ckeck if the car is new
 	cout << "Count Car: " << countCar << endl;
@@ -464,28 +463,28 @@ bool askActiveHistogram() {
  * @return the new images 
  */
 Mat equalize(Mat& imgFrame1) {
-	int flat_img[256] = { 0 };
+	int flatimg[256] = { 0 };
 	int cumsum[256] = { 0 };
 	int memory = 0;
-	int normalize_img[256] = { 0 };
+	int normalizeimg[256] = { 0 };
 	Mat result(imgFrame1.rows, imgFrame1.cols, CV_8U);
 
 	for (int i = 0; i < imgFrame1.rows; i++) {
 		for (int j = 0; j < imgFrame1.cols; j++) {
 			int index;
 			index = static_cast<int>(imgFrame1.at<uchar>(i, j));
-			flat_img[index]++;
+			flatimg[index]++;
 		}
 	}
 
 	for (int i = 0; i < 160; i++) {
-		memory += flat_img[i];
+		memory += flatimg[i];
 		cumsum[i] = memory;
 	}
 
 	for (int i = 0; i < 160; i++) {
-		normalize_img[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
-		normalize_img[i] = static_cast<int>(normalize_img[i]);
+		normalizeimg[i] = ((cumsum[i] - cumsum[0]) * 255) / (imgFrame1.rows * imgFrame1.cols - cumsum[0]);
+		normalizeimg[i] = static_cast<int>(normalizeimg[i]);
 	}
 	
 
@@ -494,8 +493,8 @@ Mat equalize(Mat& imgFrame1) {
 	Mat_<uchar>::iterator end = imgFrame1.end<uchar>();
 
 	while (begin != end) {
-		int intensity_value = static_cast<int>(*begin);
-		*tmpresult = normalize_img[intensity_value];
+		int intensityvalue = static_cast<int>(*begin);
+		*tmpresult = normalizeimg[intensityvalue];
 		tmpresult++;
 		begin++;
 	}
@@ -549,12 +548,11 @@ Mat histogramm(Mat imgFrame1) {
  */
 int main(void) {
 	int frameCount = 3;
-	vector<vector<Point>> cont, cont2;
-	vector<Vec4i> hierarchy, hierarchy2;
-	vector<Mat> result_planes, result_norm_planes;
+	vector<vector<Point>> cont;
+	vector<Vec4i> hierarchy;
 	int area;
 	int fps = 1;
-	Mat roi, tmproi, element, element2, erosion_dst, dilation_dst, show, matlines;
+	Mat roi, tmproi, element, dilation_dst;
 	Rect data;
 	clock_t startTime, endTime;
 	bool activeline = askActiveLinie();
