@@ -35,7 +35,7 @@ vector<vector<Point>> contoursline;
 
 int countCar = 0;
 int indexLine;
-float imgLineY;
+float imgLineY = 0;
 
 //Parameter
 int datacarhealth = 2;
@@ -43,6 +43,7 @@ int range = 60;
 int maxLight = 160;
 int detectLineParameter[] = { 540, 740, 1200, 260, 460, 600 };
 int maxArea = 2000;
+float detectSize = 2.85;
 
 bool condition = true;
 bool clicked = false;
@@ -625,9 +626,11 @@ int main(void) {
 		}
 			
 		tmproi = imgFrame1.clone();
-		imgLineY = tmproi.size().height / 2.85;
+		
 		if (activeline) {
+			imgLineY = tmproi.size().height / detectSize;
 			imgFrame1 = detectStreet(imgFrame1);
+			
 		}
 		
 		pBackSub->apply(newFrame, fgMask);
