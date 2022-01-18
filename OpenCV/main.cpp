@@ -54,7 +54,6 @@ bool vertical = false;
 * prewviewing the ROI area while trying
 * to set it
 */
-
 void showRectangle() {
 	strucCopy = strucFrame.clone();
 	rectangle(strucFrame, ROIR, Scalar(0, 255, 0), 1, 8, 0);
@@ -111,6 +110,7 @@ static void onCounter(int event, int x, int y, int, void*) {
 		start.x = 0;
 		ende.x = strucFrame.size().width;
 	}
+
 	showLine();
 }
 
@@ -255,6 +255,7 @@ void newRect(Rect data) {
  * @param y2 y value from the second line
  * @return The result of the new Point
  */
+
 double Det(double x1, double y1, double x2, double y2){
 	return x1 * y2 - y1 * x2;
 }
@@ -516,6 +517,7 @@ Mat equalize(Mat& imgFrame1) {
  * @param imgFrame1 The images that shut be improve
  * @return The gray image that has been darkened 
  */
+
 Mat histogramm(Mat imgFrame1) {
 	cvtColor(imgFrame1, imgFrame1, COLOR_BGRA2GRAY);
 
@@ -538,6 +540,7 @@ Mat histogramm(Mat imgFrame1) {
 		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))), Point(bin_w * (i), hist_h - cvRound(hist.at<float>(i))), Scalar(255, 0, 0), 2, 8, 0);
 		hist.at<float>(i);
 	}
+
 	imshow("calcHist Demo", histImage);
 
 	return img_out;
