@@ -524,22 +524,19 @@ Mat histogramm(Mat imgFrame1) {
 
 	imshow("New Images", img_out);
 
-	vector<Mat> bgr_planes;
-	split(imgFrame1, bgr_planes);
 	int histSize = 256;
 	float range[] = { 0, 256 };
 	const float* histRange[] = { range };
 	
-	bool uniform = true, accumulate = false;
-	Mat b_hist, g_hist, r_hist;
-	calcHist(&img_out, 1, 0, Mat(), b_hist, 1, &histSize, histRange, uniform, accumulate);
+	Mat hist;
+	calcHist(&img_out, 1, 0, Mat(), hist, 1, &histSize, histRange, true, false);
 	int hist_w = 520, hist_h = 420;
 	int bin_w = cvRound((double)hist_w / histSize);
 	Mat histImage(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
-	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 	for (int i = 1; i < histSize; i++){
-		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))), Point(bin_w * (i), hist_h - cvRound(b_hist.at<float>(i))), Scalar(255, 0, 0), 2, 8, 0);
-		b_hist.at<float>(i);
+		line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))), Point(bin_w * (i), hist_h - cvRound(hist.at<float>(i))), Scalar(255, 0, 0), 2, 8, 0);
+		hist.at<float>(i);
 	}
 	imshow("calcHist Demo", histImage);
 
