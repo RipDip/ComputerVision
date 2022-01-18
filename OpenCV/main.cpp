@@ -42,7 +42,7 @@ int datacarhealth = 2;
 int range = 60;
 int maxLight = 160;
 int detectLineParameter[] = { 540, 740, 1200, 260, 460, 600 };
-int maxArea = 2000;
+int minArea = 2000;
 float detectSize = 2.85;
 
 bool condition = true;
@@ -644,7 +644,7 @@ int main(void) {
 
 		for (unsigned int i = 0; i < cont.size(); i++) {
 			area = contourArea(cont[i]);
-			if (area > maxArea) {
+			if (area > minArea) {
 				//drawContours(roi, cont, i, Scalar(0, 255, 0), 2, LINE_8, hierarchy, 0);
 				data = boundingRect(cont[i]);
 				newRect(data);
