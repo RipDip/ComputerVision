@@ -362,3 +362,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/OpenCV/Resources/HighwayTraffic.mp4
+/OpenCV/Resources/HighwayTraffic2.mp4
+/OpenCV/Resources/HighwayTraffic3.mp4
+/OpenCV/Resources/trafficCrossing.mp4
